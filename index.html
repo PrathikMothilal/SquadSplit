@@ -54,7 +54,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useMemo } = React;
+    const { useState, useMemo, useEffect } = React;
 
     // --- Inline Icon Components (Replacing Lucide) ---
     const Icon = ({ d, size=24, className="" }) => (
@@ -88,6 +88,7 @@
       PieChart: (p) => <Icon d={["M21.21 15.89A10 10 0 1 1 8 2.83", "M22 12A10 10 0 0 0 12 2v10z"]} {...p} />,
       Camera: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>,
       Loader2: (p) => <Icon d={["M21 12a9 9 0 1 1-6.219-8.56"]} {...p} />,
+      Folder: (p) => <Icon d={["M4 20h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-8.5L9.5 4H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1Z"]} {...p} />,
     };
 
     // --- State and Constants ---
@@ -115,6 +116,12 @@
       { id: "e4", description: "Pub Hopping", amount: 4200, category: "food", paidBy: "m2", participants: ["m1", "m2", "m3"], splitType: "equal", customSplits: {}, date: Date.now() - 43200000 },
     ];
 
+    // A "group" represents one trip/squad. Each has its own members, expenses
+    // and settlements, so switching the active trip swaps the whole context.
+    const seedGroups = [
+      { id: "g1", name: "Coorg Trip", members: seedMembers, expenses: seedExpenses, settlements: [], createdAt: Date.now() - 86400000 * 3 },
+    ];
+
     function formatINR(n) {
       if (!isFinite(n)) n = 0;
       const sign = n < -0.5 ? "-" : "";
@@ -133,19 +140,104 @@
 
       if (date.toDateString() === today.toDateString()) return "Today";
       if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
-      return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+      return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    }
+
+    function formatTime(ts) {
+      return new Date(ts).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
+    }
+
+    // Fallback for unusually large groups where an exhaustive search would be
+    // too slow: pairs the biggest creditor with the biggest debtor each round.
+    // Not guaranteed minimal, but still collapses many small IOUs into few.
+    function greedySettle(ids, amts) {
+      const creditors = [];
+      const debtors = [];
+      ids.forEach((id, idx) => {
+        const v = amts[idx];
+        if (v > 0.5) creditors.push({ id, amt: v });
+        else if (v < -0.5) debtors.push({ id, amt: -v });
+      });
+      creditors.sort((a, b) => b.amt - a.amt);
+      debtors.sort((a, b) => b.amt - a.amt);
+      const res = [];
+      let ci = 0, di = 0;
+      while (ci < creditors.length && di < debtors.length) {
+        const c = creditors[ci], d = debtors[di];
+        const amt = Math.min(c.amt, d.amt);
+        res.push({ from: d.id, to: c.id, amount: Math.round(amt) });
+        c.amt -= amt; d.amt -= amt;
+        if (c.amt < 0.5) ci++;
+        if (d.amt < 0.5) di++;
+      }
+      return res;
+    }
+
+    // Finds the smallest possible set of payments that settles every balance
+    // (the "optimal account balancing" problem). Exhaustively searches pairings
+    // via backtracking with pruning — practical for typical trip group sizes.
+    function optimalSettle(ids, amts) {
+      let best = null;
+
+      function dfs(bal, txns) {
+        let i = 0;
+        while (i < bal.length && Math.abs(bal[i]) < 0.5) i++;
+        if (i === bal.length) {
+          if (!best || txns.length < best.length) best = txns.slice();
+          return;
+        }
+        if (best && txns.length >= best.length) return; // can't beat the best found so far
+        for (let j = 0; j < bal.length; j++) {
+          if (j === i || Math.abs(bal[j]) < 0.5) continue;
+          if ((bal[i] > 0) === (bal[j] > 0)) continue; // only pair opposite signs
+          const amt = Math.min(Math.abs(bal[i]), Math.abs(bal[j]));
+          const next = bal.slice();
+          next[i] += bal[i] > 0 ? -amt : amt;
+          next[j] += bal[j] > 0 ? -amt : amt;
+          const from = bal[i] < 0 ? ids[i] : ids[j];
+          const to = bal[i] < 0 ? ids[j] : ids[i];
+          txns.push({ from, to, amount: amt });
+          dfs(next, txns);
+          txns.pop();
+        }
+      }
+
+      dfs(amts.slice(), []);
+      return (best || []).map((t) => ({ from: t.from, to: t.to, amount: Math.round(t.amount) })).filter((t) => t.amount > 0);
     }
 
     function ExpenseSplitApp() {
-      const [members, setMembers] = useState(seedMembers);
-      const [expenses, setExpenses] = useState(seedExpenses);
-      const [settlements, setSettlements] = useState([]);
+      // --- Trips (Groups) ---
+      // Each trip owns its own members/expenses/settlements. Only one trip
+      // is "active" at a time; it stays active until another trip is created
+      // or explicitly selected.
+      const [groups, setGroups] = useState(seedGroups);
+      const [activeGroupId, setActiveGroupId] = useState(seedGroups[0].id);
+      const [expandedGroupId, setExpandedGroupId] = useState(null);
+      const [newGroupName, setNewGroupName] = useState("");
+      const [memberInputByGroup, setMemberInputByGroup] = useState({});
+
+      const activeGroup = groups.find((g) => g.id === activeGroupId) || groups[0];
+      const members = activeGroup.members;
+      const expenses = activeGroup.expenses;
+      const settlements = activeGroup.settlements;
+
+      // Shims that keep every existing setMembers/setExpenses/setSettlements
+      // call working exactly as before, but write into the active trip only.
+      function setMembers(updater) {
+        setGroups((prev) => prev.map((g) => g.id !== activeGroupId ? g : { ...g, members: typeof updater === "function" ? updater(g.members) : updater }));
+      }
+      function setExpenses(updater) {
+        setGroups((prev) => prev.map((g) => g.id !== activeGroupId ? g : { ...g, expenses: typeof updater === "function" ? updater(g.expenses) : updater }));
+      }
+      function setSettlements(updater) {
+        setGroups((prev) => prev.map((g) => g.id !== activeGroupId ? g : { ...g, settlements: typeof updater === "function" ? updater(g.settlements) : updater }));
+      }
+
       const [activeTab, setActiveTab] = useState("dashboard");
       const [expandedSettleMember, setExpandedSettleMember] = useState(null);
       
       const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
-      const [newMemberName, setNewMemberName] = useState("");
-      const [showAddMember, setShowAddMember] = useState(false);
 
       const [desc, setDesc] = useState("");
       const [amount, setAmount] = useState("");
@@ -185,21 +277,15 @@
       }, [members, expenses, settlements]);
 
       const suggestions = useMemo(() => {
-        const bal = { ...balances };
-        const creditors = Object.entries(bal).filter(([, v]) => v > 0.5).map(([id, v]) => ({ id, amt: v })).sort((a, b) => b.amt - a.amt);
-        const debtors = Object.entries(bal).filter(([, v]) => v < -0.5).map(([id, v]) => ({ id, amt: -v })).sort((a, b) => b.amt - a.amt);
-        
-        const res = [];
-        let ci = 0, di = 0;
-        while (ci < creditors.length && di < debtors.length) {
-          const c = creditors[ci], d = debtors[di];
-          const amt = Math.min(c.amt, d.amt);
-          res.push({ from: d.id, to: c.id, amount: Math.round(amt) });
-          c.amt -= amt; d.amt -= amt;
-          if (c.amt < 0.5) ci++;
-          if (d.amt < 0.5) di++;
-        }
-        return res;
+        const ids = [];
+        const amts = [];
+        Object.entries(balances).forEach(([id, v]) => {
+          if (Math.abs(v) > 0.5) { ids.push(id); amts.push(v); }
+        });
+        if (ids.length === 0) return [];
+        // Exhaustive search scales poorly past a dozen or so open balances —
+        // fall back to the greedy pairing for unusually large groups.
+        return ids.length > 12 ? greedySettle(ids, amts) : optimalSettle(ids, amts);
       }, [balances]);
 
       const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
@@ -222,22 +308,68 @@
         return [...a, ...s].sort((x, y) => y.date - x.date);
       }, [expenses, settlements]);
 
-      function handleAddMember(e) {
+      // Buckets the (already newest-first) activity feed into per-day groups
+      // so the ledger can show a date header once per day instead of
+      // repeating the date on every single line item.
+      const groupedActivity = useMemo(() => {
+        const map = new Map();
+        activity.forEach((item) => {
+          const key = new Date(item.date).toDateString();
+          if (!map.has(key)) map.set(key, { date: item.date, items: [] });
+          map.get(key).items.push(item);
+        });
+        return Array.from(map.values());
+      }, [activity]);
+
+      // Reset the expense-form participant/payer defaults whenever the
+      // active trip changes, so a new trip doesn't inherit stale member ids.
+      useEffect(() => {
+        setParticipants(activeGroup.members.map((m) => m.id));
+        setPaidBy(activeGroup.members[0]?.id || "");
+        setExpandedSettleMember(null);
+      }, [activeGroupId]);
+
+      function createGroup(e) {
         e.preventDefault();
-        const name = newMemberName.trim();
+        const name = newGroupName.trim();
         if (!name) return;
-        const id = "m" + Date.now();
-        setMembers([...members, { id, name, color: AVATAR_COLORS[members.length % AVATAR_COLORS.length] }]);
-        setParticipants((p) => [...p, id]);
-        setNewMemberName("");
-        setShowAddMember(false);
+        const id = "g" + Date.now();
+        const newGroup = { id, name, members: [{ id: id + "_m1", name: "You", color: AVATAR_COLORS[0] }], expenses: [], settlements: [], createdAt: Date.now() };
+        setGroups((prev) => [newGroup, ...prev]);
+        setActiveGroupId(id);
+        setNewGroupName("");
+        setExpandedGroupId(id);
       }
 
-      function removeMember(id) {
-        const used = expenses.some((e) => e.paidBy === id || e.participants.includes(id)) || settlements.some((s) => s.from === id || s.to === id);
+      function deleteGroup(id) {
+        if (groups.length <= 1) return;
+        const target = groups.find((g) => g.id === id);
+        if (target && target.expenses.length > 0) {
+          const ok = window.confirm(`"${target.name}" has expense history. Delete it anyway?`);
+          if (!ok) return;
+        }
+        const remaining = groups.filter((g) => g.id !== id);
+        setGroups(remaining);
+        if (activeGroupId === id) setActiveGroupId(remaining[0].id);
+        if (expandedGroupId === id) setExpandedGroupId(null);
+      }
+
+      function addMemberToGroup(groupId, name) {
+        const trimmed = (name || "").trim();
+        if (!trimmed) return;
+        const id = "m" + Date.now();
+        setGroups((prev) => prev.map((g) => g.id !== groupId ? g : { ...g, members: [...g.members, { id, name: trimmed, color: AVATAR_COLORS[g.members.length % AVATAR_COLORS.length] }] }));
+        if (groupId === activeGroupId) setParticipants((p) => [...p, id]);
+        setMemberInputByGroup((prev) => ({ ...prev, [groupId]: "" }));
+      }
+
+      function removeMemberFromGroup(groupId, memberId) {
+        const group = groups.find((g) => g.id === groupId);
+        if (!group) return;
+        const used = group.expenses.some((e) => e.paidBy === memberId || e.participants.includes(memberId)) || group.settlements.some((s) => s.from === memberId || s.to === memberId);
         if (used) return;
-        setMembers(members.filter((m) => m.id !== id));
-        setParticipants((p) => p.filter((pid) => pid !== id));
+        setGroups((prev) => prev.map((g) => g.id !== groupId ? g : { ...g, members: g.members.filter((m) => m.id !== memberId) }));
+        if (groupId === activeGroupId) setParticipants((p) => p.filter((pid) => pid !== memberId));
       }
 
       function toggleParticipant(id) {
@@ -404,15 +536,18 @@
 
             <header className="px-5 pt-12 sm:pt-8 pb-4 bg-gradient-to-b from-indigo-950/20 to-transparent sticky top-0 z-30 backdrop-blur-md border-b border-white/5">
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2.5">
+                <button onClick={() => setActiveTab("groups")} className="flex items-center gap-2.5 text-left active:opacity-70 transition-opacity">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                     <Icons.Wallet size={20} className="text-white" />
                   </div>
                   <div>
                     <h1 className="font-bold text-lg leading-tight tracking-tight text-zinc-100">SquadSplit</h1>
-                    <p className="text-[11px] font-medium text-zinc-500">Shared Finances</p>
+                    <p className="text-[11px] font-medium text-zinc-500 flex items-center gap-1">
+                      {activeGroup.name}
+                      <Icons.ChevronRight size={11} className="text-zinc-600" />
+                    </p>
                   </div>
-                </div>
+                </button>
                 <div className="flex -space-x-2">
                   {members.slice(0, 3).map(m => (
                     <div key={m.id} className={`w-8 h-8 rounded-full border-2 border-[#0A0A0B] flex items-center justify-center text-[10px] font-bold text-white ${m.color}`}>
@@ -473,6 +608,9 @@
                       <h3 className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
                         <Icons.Users size={16} className="text-indigo-400"/> Group Balances
                       </h3>
+                      <button onClick={() => { setActiveTab("groups"); setExpandedGroupId(activeGroupId); }} className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors">
+                        Manage
+                      </button>
                     </div>
                     
                     <div className="space-y-1">
@@ -493,27 +631,10 @@
                                 {b > 0.5 ? `+${formatINR(b)}` : b < -0.5 ? `${formatINR(b)}` : "Settled"}
                               </span>
                             </div>
-                            {!used && members.length > 1 && (
-                              <button onClick={() => removeMember(m.id)} className="opacity-0 group-hover:opacity-100 p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-400/10 rounded-full transition-all">
-                                <Icons.X size={14} />
-                              </button>
-                            )}
                           </div>
                         );
                       })}
                     </div>
-
-                    {showAddMember ? (
-                      <form onSubmit={handleAddMember} className="mt-4 flex items-center gap-2">
-                        <input autoFocus value={newMemberName} onChange={(e) => setNewMemberName(e.target.value)} placeholder="Enter name..." className="flex-1 bg-zinc-950 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition-colors" />
-                        <button type="submit" className="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center hover:bg-indigo-600 transition-colors"><Icons.Check size={16} /></button>
-                        <button type="button" onClick={() => { setShowAddMember(false); setNewMemberName(""); }} className="w-10 h-10 rounded-xl bg-zinc-800 text-zinc-400 flex items-center justify-center hover:bg-zinc-700 transition-colors"><Icons.X size={16} /></button>
-                      </form>
-                    ) : (
-                      <button onClick={() => setShowAddMember(true)} className="mt-4 w-full py-3 rounded-xl border border-dashed border-zinc-700 text-zinc-400 text-sm font-medium flex items-center justify-center gap-2 hover:bg-white/5 hover:text-zinc-200 transition-colors">
-                        <Icons.UserPlus size={16} /> Add Person
-                      </button>
-                    )}
                   </div>
                 </div>
               )}
@@ -524,56 +645,72 @@
                   <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                     <Icons.Receipt size={20} className="text-indigo-400" /> Activity Ledger
                   </h2>
-                  <div className="space-y-3">
-                    {activity.length === 0 ? (
-                      <div className="text-center py-12 px-4 bg-zinc-900/30 rounded-2xl border border-dashed border-zinc-800">
-                        <p className="text-zinc-500 text-sm">No expenses yet. Tap the + button to add one.</p>
-                      </div>
-                    ) : (
-                      activity.map((item) =>
-                        item.type === "settlement" ? (
-                          <div className="flex items-center gap-3 p-3 bg-zinc-900/40 border border-white/5 rounded-2xl" key={item.id}>
-                            <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 flex-shrink-0">
-                              <Icons.Check size={18} />
+                  {groupedActivity.length === 0 ? (
+                    <div className="text-center py-12 px-4 bg-zinc-900/30 rounded-2xl border border-dashed border-zinc-800">
+                      <p className="text-zinc-500 text-sm">No expenses yet. Tap the + button to add one.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {groupedActivity.map((group) => {
+                        const dayTotal = group.items.filter((i) => i.type === "expense").reduce((s, i) => s + i.amount, 0);
+                        return (
+                          <div key={group.date}>
+                            <div className="flex items-center justify-between mb-3 px-1">
+                              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{formatDate(group.date)}</span>
+                              {dayTotal > 0 && <span className="text-xs font-semibold text-zinc-600">{formatINR(dayTotal)}</span>}
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-zinc-200 truncate">
-                                {memberOf(item.from).name} paid {memberOf(item.to).name}
-                              </p>
-                              <p className="text-xs text-zinc-500">{formatDate(item.date)}</p>
+                            <div className="space-y-3">
+                              {group.items.map((item) =>
+                                item.type === "settlement" ? (
+                                  <div className="flex items-center gap-3 p-3 bg-zinc-900/40 border border-white/5 rounded-2xl" key={item.id}>
+                                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 flex-shrink-0">
+                                      <Icons.Check size={18} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-zinc-200 truncate">
+                                        {memberOf(item.from).name} paid {memberOf(item.to).name}
+                                      </p>
+                                      <p className="text-xs text-zinc-500">{formatTime(item.date)}</p>
+                                    </div>
+                                    <div className="text-sm font-bold text-emerald-400">{formatINR(item.amount)}</div>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-3 p-3 bg-zinc-900/60 border border-white/5 rounded-2xl relative overflow-hidden group" key={item.id}>
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${CATEGORIES[item.category]?.bg || 'bg-zinc-800'} ${CATEGORIES[item.category]?.color || 'text-zinc-400'}`}>
+                                      {React.createElement(CATEGORIES[item.category]?.icon || Icons.MoreHorizontal, { size: 18 })}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-semibold text-zinc-100 truncate">{item.description}</p>
+                                      <p className="text-xs text-zinc-500 truncate">
+                                        {memberOf(item.paidBy).name} paid · {formatTime(item.date)}
+                                      </p>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-sm font-bold text-white">{formatINR(item.amount)}</span>
+                                    </div>
+                                    <button onClick={() => deleteExpense(item.id)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-rose-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                                      <Icons.Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                )
+                              )}
                             </div>
-                            <div className="text-sm font-bold text-emerald-400">{formatINR(item.amount)}</div>
                           </div>
-                        ) : (
-                          <div className="flex items-center gap-3 p-3 bg-zinc-900/60 border border-white/5 rounded-2xl relative overflow-hidden group" key={item.id}>
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${CATEGORIES[item.category]?.bg || 'bg-zinc-800'} ${CATEGORIES[item.category]?.color || 'text-zinc-400'}`}>
-                              {React.createElement(CATEGORIES[item.category]?.icon || Icons.MoreHorizontal, { size: 18 })}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-zinc-100 truncate">{item.description}</p>
-                              <p className="text-xs text-zinc-500 truncate">
-                                {memberOf(item.paidBy).name} paid · {formatDate(item.date)}
-                              </p>
-                            </div>
-                            <div className="flex flex-col items-end">
-                              <span className="text-sm font-bold text-white">{formatINR(item.amount)}</span>
-                            </div>
-                            <button onClick={() => deleteExpense(item.id)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-rose-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                              <Icons.Trash2 size={14} />
-                            </button>
-                          </div>
-                        )
-                      )
-                    )}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
               {activeTab === "settle" && (
                 <div className="p-5">
-                  <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
                     <Icons.ArrowLeftRight size={20} className="text-indigo-400" /> Settle Up
                   </h2>
+                  <p className="text-xs text-zinc-500 mb-4">
+                    {suggestions.length === 0 ? "Nothing to settle." : `Simplified to the fewest payments possible — just ${suggestions.length} transaction${suggestions.length !== 1 ? "s" : ""} to clear every balance. Each person only sees what they need to pay.`}
+                  </p>
                   
                   {suggestions.length === 0 ? (
                     <div className="text-center py-12 px-4 bg-zinc-900/30 rounded-2xl border border-dashed border-zinc-800">
@@ -586,18 +723,21 @@
                   ) : (
                     <div className="space-y-3">
                       {members.map((member) => {
+                        // Only the payments THIS member needs to make — what
+                        // they're owed by others belongs on the other
+                        // person's card instead, so nobody sees a payment
+                        // that isn't theirs to act on.
                         const owes = suggestions.filter((s) => s.from === member.id);
-                        const getsBack = suggestions.filter((s) => s.to === member.id);
-                        const isSettled = owes.length === 0 && getsBack.length === 0;
                         const used = expenses.some((e) => e.paidBy === member.id || e.participants.includes(member.id)) || settlements.some((s) => s.from === member.id || s.to === member.id);
                         
                         if (!used) return null;
-                        const isExpanded = expandedSettleMember === member.id;
+                        const canExpand = owes.length > 0;
+                        const isExpanded = canExpand && expandedSettleMember === member.id;
                         const netBalance = balances[member.id] || 0;
 
                         return (
                           <div key={member.id} className={`bg-[#0F0F11] rounded-2xl border transition-all duration-300 overflow-hidden ${isExpanded ? 'border-indigo-500/30 shadow-[0_0_20px_rgba(99,102,241,0.05)]' : 'border-white/5'}`}>
-                            <button onClick={() => setExpandedSettleMember(isExpanded ? null : member.id)} className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
+                            <button onClick={() => canExpand && setExpandedSettleMember(isExpanded ? null : member.id)} disabled={!canExpand} className={`w-full p-4 flex items-center justify-between transition-colors ${canExpand ? 'hover:bg-white/[0.02] cursor-pointer' : 'cursor-default'}`}>
                               <div className="flex items-center gap-4">
                                 <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-inner ${member.color}`}>
                                   {initials(member.name)}
@@ -605,80 +745,158 @@
                                 <div className="text-left">
                                   <div className="text-zinc-100 font-bold text-base">{member.name}</div>
                                   <div className="text-xs font-medium mt-0.5">
-                                    {isSettled ? (
-                                      <span className="text-zinc-500">Settled up</span>
-                                    ) : netBalance < -0.5 ? (
+                                    {netBalance < -0.5 ? (
                                       <span className="text-rose-400">Owes {formatINR(Math.abs(netBalance))}</span>
-                                    ) : (
+                                    ) : netBalance > 0.5 ? (
                                       <span className="text-emerald-400">Gets back {formatINR(netBalance)}</span>
+                                    ) : (
+                                      <span className="text-zinc-500">Settled up</span>
                                     )}
                                   </div>
                                 </div>
                               </div>
-                              <div className={`text-zinc-500 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-indigo-400' : ''}`}>
-                                <Icons.ChevronDown size={20} />
-                              </div>
+                              {canExpand ? (
+                                <div className={`text-zinc-500 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-indigo-400' : ''}`}>
+                                  <Icons.ChevronDown size={20} />
+                                </div>
+                              ) : (
+                                <span className="text-[11px] font-medium text-zinc-600">Nothing to pay</span>
+                              )}
                             </button>
 
-                            <div className={`grid transition-all duration-300 ease-in-out ${isExpanded && !isSettled ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
-                              <div className="overflow-hidden">
-                                <div className="p-4 pt-0 bg-zinc-950/50">
-                                  <div className="space-y-4 mt-2">
-                                    {owes.map((s, idx) => (
-                                      <div key={`owe-${idx}`} className="bg-[#171719] p-4 rounded-xl border border-white/5">
-                                        <div className="flex items-center justify-between mb-4">
-                                          <div className="flex flex-col items-center gap-2">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white ${member.color}`}>{initials(member.name)}</div>
-                                            <span className="text-[11px] font-medium text-zinc-400">{member.name}</span>
-                                          </div>
-                                          <div className="flex flex-col items-center flex-1 px-3">
-                                            <span className="text-emerald-400 font-bold text-[17px] mb-1">{formatINR(s.amount)}</span>
-                                            <div className="w-full h-px bg-zinc-700 relative flex justify-end items-center">
-                                              <Icons.ChevronRight size={14} className="text-zinc-600 absolute -right-1"/>
+                            {canExpand && (
+                              <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                                <div className="overflow-hidden">
+                                  <div className="p-4 pt-0 bg-zinc-950/50">
+                                    <div className="space-y-4 mt-2">
+                                      {owes.map((s, idx) => (
+                                        <div key={`owe-${idx}`} className="bg-[#171719] p-4 rounded-xl border border-white/5">
+                                          <div className="flex items-center justify-between mb-4">
+                                            <div className="flex flex-col items-center gap-2">
+                                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white ${member.color}`}>{initials(member.name)}</div>
+                                              <span className="text-[11px] font-medium text-zinc-400">{member.name}</span>
+                                            </div>
+                                            <div className="flex flex-col items-center flex-1 px-3">
+                                              <span className="text-emerald-400 font-bold text-[17px] mb-1">{formatINR(s.amount)}</span>
+                                              <div className="w-full h-px bg-zinc-700 relative flex justify-end items-center">
+                                                <Icons.ChevronRight size={14} className="text-zinc-600 absolute -right-1"/>
+                                              </div>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-2">
+                                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white ${memberOf(s.to).color}`}>{initials(memberOf(s.to).name)}</div>
+                                              <span className="text-[11px] font-medium text-zinc-400">{memberOf(s.to).name}</span>
                                             </div>
                                           </div>
-                                          <div className="flex flex-col items-center gap-2">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white ${memberOf(s.to).color}`}>{initials(memberOf(s.to).name)}</div>
-                                            <span className="text-[11px] font-medium text-zinc-400">{memberOf(s.to).name}</span>
-                                          </div>
+                                          <button onClick={(e) => { e.stopPropagation(); handleSettle(s); }} className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-[#050505] text-sm font-bold rounded-lg transition-colors">
+                                            Record Payment
+                                          </button>
                                         </div>
-                                        <button onClick={(e) => { e.stopPropagation(); handleSettle(s); }} className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-[#050505] text-sm font-bold rounded-lg transition-colors">
-                                          Record Payment
-                                        </button>
-                                      </div>
-                                    ))}
-                                    {getsBack.map((s, idx) => (
-                                      <div key={`get-${idx}`} className="bg-[#171719] p-4 rounded-xl border border-white/5">
-                                        <div className="flex items-center justify-between mb-4">
-                                          <div className="flex flex-col items-center gap-2">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white ${memberOf(s.from).color}`}>{initials(memberOf(s.from).name)}</div>
-                                            <span className="text-[11px] font-medium text-zinc-400">{memberOf(s.from).name}</span>
-                                          </div>
-                                          <div className="flex flex-col items-center flex-1 px-3">
-                                            <span className="text-emerald-400 font-bold text-[17px] mb-1">{formatINR(s.amount)}</span>
-                                            <div className="w-full h-px bg-zinc-700 relative flex justify-end items-center">
-                                              <Icons.ChevronRight size={14} className="text-zinc-600 absolute -right-1"/>
-                                            </div>
-                                          </div>
-                                          <div className="flex flex-col items-center gap-2">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white ${member.color}`}>{initials(member.name)}</div>
-                                            <span className="text-[11px] font-medium text-zinc-400">{member.name}</span>
-                                          </div>
-                                        </div>
-                                        <button onClick={(e) => { e.stopPropagation(); handleSettle(s); }} className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-[#050505] text-sm font-bold rounded-lg transition-colors">
-                                          Record Payment
-                                        </button>
-                                      </div>
-                                    ))}
+                                      ))}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
+                            )}
                           </div>
                         );
                       })}
                     </div>
                   )}
+                </div>
+              )}
+
+              {activeTab === "groups" && (
+                <div className="p-5 space-y-5">
+                  <div>
+                    <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                      <Icons.Folder size={20} className="text-indigo-400" /> Trips
+                    </h2>
+                    <p className="text-xs text-zinc-500">One trip is active at a time — everything you add lives inside it until you switch.</p>
+                  </div>
+
+                  <form onSubmit={createGroup} className="flex items-center gap-2">
+                    <input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} placeholder="New trip name..." className="flex-1 bg-zinc-900/50 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 transition-colors" />
+                    <button type="submit" className="w-11 h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-center hover:opacity-90 transition-all flex-shrink-0 shadow-[0_4px_14px_rgba(99,102,241,0.3)]">
+                      <Icons.Plus size={18} />
+                    </button>
+                  </form>
+
+                  <div className="space-y-3">
+                    {groups.map((g) => {
+                      const isActive = g.id === activeGroupId;
+                      const isExpanded = expandedGroupId === g.id;
+                      const groupTotal = g.expenses.reduce((s, e) => s + e.amount, 0);
+                      return (
+                        <div key={g.id} className={`bg-[#0F0F11] rounded-2xl border transition-all duration-300 overflow-hidden ${isActive ? "border-indigo-500/40 shadow-[0_0_20px_rgba(99,102,241,0.08)]" : "border-white/5"}`}>
+                          <button onClick={() => setExpandedGroupId(isExpanded ? null : g.id)} className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center ${isActive ? "bg-indigo-500/15 text-indigo-400" : "bg-zinc-800 text-zinc-500"}`}>
+                                <Icons.Plane size={18} />
+                              </div>
+                              <div className="text-left min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-zinc-100 font-bold text-sm truncate">{g.name}</span>
+                                  {isActive && (
+                                    <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0">Active</span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-zinc-500 mt-0.5 truncate">{g.members.length} member{g.members.length !== 1 ? "s" : ""} · {formatINR(groupTotal)} spent</div>
+                              </div>
+                            </div>
+                            <Icons.ChevronDown size={18} className={`text-zinc-500 flex-shrink-0 transition-transform duration-300 ${isExpanded ? "rotate-180 text-indigo-400" : ""}`} />
+                          </button>
+
+                          <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                            <div className="overflow-hidden">
+                              <div className="p-4 pt-0 bg-zinc-950/50">
+                                <div className="pt-3 space-y-4">
+                                  <div>
+                                    <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2 block">Members</label>
+                                    <div className="flex flex-wrap gap-2">
+                                      {g.members.map((m) => {
+                                        const used = g.expenses.some((e) => e.paidBy === m.id || e.participants.includes(m.id)) || g.settlements.some((s) => s.from === m.id || s.to === m.id);
+                                        return (
+                                          <div key={m.id} className="flex items-center gap-2 py-1.5 pl-1.5 pr-2 rounded-full bg-zinc-900 border border-zinc-800">
+                                            <div className={`w-6 h-6 rounded-full text-[9px] flex items-center justify-center text-white flex-shrink-0 ${m.color}`}>{initials(m.name)}</div>
+                                            <span className="text-xs font-medium text-zinc-300">{m.name}</span>
+                                            {!used && g.members.length > 1 && (
+                                              <button onClick={() => removeMemberFromGroup(g.id, m.id)} className="text-zinc-600 hover:text-rose-400 transition-colors">
+                                                <Icons.X size={12} />
+                                              </button>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+
+                                  <form onSubmit={(e) => { e.preventDefault(); addMemberToGroup(g.id, memberInputByGroup[g.id]); }} className="flex items-center gap-2">
+                                    <input value={memberInputByGroup[g.id] || ""} onChange={(e) => setMemberInputByGroup((prev) => ({ ...prev, [g.id]: e.target.value }))} placeholder="Add a member..." className="flex-1 bg-zinc-950 border border-zinc-800 text-white rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-500 transition-colors" />
+                                    <button type="submit" className="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center hover:bg-indigo-600 transition-colors flex-shrink-0">
+                                      <Icons.UserPlus size={15} />
+                                    </button>
+                                  </form>
+
+                                  <div className="flex items-center gap-2 pt-1">
+                                    {!isActive && (
+                                      <button onClick={() => setActiveGroupId(g.id)} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold transition-all active:scale-[0.98]">
+                                        Set as Active
+                                      </button>
+                                    )}
+                                    {groups.length > 1 && (
+                                      <button onClick={() => deleteGroup(g.id)} className={`${isActive ? "flex-1" : ""} py-2.5 px-4 rounded-xl bg-zinc-900 border border-white/5 text-rose-400 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-rose-500/10 transition-colors`}>
+                                        <Icons.Trash2 size={13} /> Delete Trip
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </main>
@@ -703,6 +921,11 @@
                   <Icons.Plus size={28} strokeWidth={2.5} />
                 </button>
               </div>
+
+              <button onClick={() => setActiveTab("groups")} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-2xl transition-all ${activeTab === "groups" ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"}`}>
+                <Icons.Folder size={22} className={activeTab === "groups" ? "text-indigo-400" : ""} />
+                <span className="text-[10px] font-medium">Trips</span>
+              </button>
 
               <button onClick={() => setActiveTab("settle")} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-2xl transition-all relative ${activeTab === "settle" ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"}`}>
                 <Icons.ArrowLeftRight size={22} className={activeTab === "settle" ? "text-indigo-400" : ""} />
