@@ -18,12 +18,16 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import {
+      initializeFirestore, doc, setDoc, deleteDoc, onSnapshot, collection,
+      persistentLocalCache, persistentSingleTabManager
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // Expose Firebase modules to the global window object so React (Babel) can access them
     window.Firebase = {
       initializeApp, getAuth, signInAnonymously, signInWithCustomToken,
-      getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection
+      initializeFirestore, doc, setDoc, deleteDoc, onSnapshot, collection,
+      persistentLocalCache, persistentSingleTabManager
     };
 
     // Your real Firebase project config (replaces the sandbox-only __firebase_config global)
@@ -221,6 +225,38 @@
       return (best || []).map((t) => ({ from: t.from, to: t.to, amount: Math.round(t.amount) })).filter((t) => t.amount > 0);
     }
 
+    // "Regular" mode: direct pairwise debts from each expense, netted only
+    // between the same two people (no cross-person cancellation/minimization).
+    function regularSettle(expensesList, settlementsList) {
+      const net = {}; // key "a|b" (a < b) -> amount 'a' owes 'b' (negative means 'b' owes 'a')
+      function addOwed(ower, payee, amt) {
+        if (ower === payee || !amt) return;
+        let a = ower, b = payee, sign = 1;
+        if (a > b) { [a, b] = [b, a]; sign = -1; }
+        const key = a + "|" + b;
+        net[key] = (net[key] || 0) + sign * amt;
+      }
+      expensesList.forEach((e) => {
+        e.participants.forEach((p) => {
+          if (p === e.paidBy) return;
+          const share = e.splitType === "equal" ? e.amount / e.participants.length : (e.customSplits[p] || 0);
+          addOwed(p, e.paidBy, share);
+        });
+      });
+      settlementsList.forEach((s) => {
+        addOwed(s.from, s.to, -s.amount);
+      });
+      const res = [];
+      Object.keys(net).forEach((key) => {
+        const val = net[key];
+        if (Math.abs(val) < 0.5) return;
+        const [a, b] = key.split("|");
+        if (val > 0) res.push({ from: a, to: b, amount: Math.round(val) });
+        else res.push({ from: b, to: a, amount: Math.round(-val) });
+      });
+      return res;
+    }
+
     function ExpenseSplitApp() {
       // Setup state for Data Loading
       const [isDBReady, setIsDBReady] = useState(false);
@@ -258,7 +294,14 @@
           try {
               const app = fb.initializeApp(config);
               const auth = fb.getAuth(app);
-              const db = fb.getFirestore(app);
+              // Enables offline persistence: data is cached in IndexedDB, so
+              // reopening the app shows cached data instantly while it syncs
+              // with the server in the background.
+              const db = fb.initializeFirestore(app, {
+                localCache: fb.persistentLocalCache({
+                  tabManager: fb.persistentSingleTabManager()
+                })
+              });
               
               const cred = await fb.signInAnonymously(auth);
               const user = cred.user;
@@ -344,6 +387,7 @@
       // UI View State
       const [activeTab, setActiveTab] = useState("dashboard");
       const [expandedSettleMember, setExpandedSettleMember] = useState(null);
+      const [isSettleModeOpen, setIsSettleModeOpen] = useState(false);
       const [analyticsFilter, setAnalyticsFilter] = useState("all"); 
       const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
       const [editingExpenseId, setEditingExpenseId] = useState(null); 
@@ -388,7 +432,18 @@
         return bal;
       }, [members, expenses, settlements]);
 
+      const settleMode = activeGroup.settleMode || "smart";
+      const settleLocked = settlements.length > 0;
+
+      function changeSettleMode(mode) {
+        if (settleLocked || mode === settleMode) return;
+        updateGroupInDB(activeGroupId, () => ({ settleMode: mode }));
+      }
+
       const suggestions = useMemo(() => {
+        if (settleMode === "regular") {
+          return regularSettle(expenses, settlements);
+        }
         const ids = [];
         const amts = [];
         Object.entries(balances).forEach(([id, v]) => {
@@ -396,7 +451,7 @@
         });
         if (ids.length === 0) return [];
         return ids.length > 12 ? greedySettle(ids, amts) : optimalSettle(ids, amts);
-      }, [balances]);
+      }, [balances, settleMode, expenses, settlements]);
 
       const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
 
@@ -965,13 +1020,62 @@
               {}
               {activeTab === "settle" && (
                 <div className="p-5">
-                  <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-                    <Icons.ArrowLeftRight size={20} className="text-indigo-400" /> Settle Up
-                  </h2>
+                  <div className="flex items-center justify-between gap-3 mb-1">
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                      <Icons.ArrowLeftRight size={20} className="text-indigo-400" /> Settle Up
+                    </h2>
+
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => !settleLocked && setIsSettleModeOpen((v) => !v)}
+                        disabled={settleLocked}
+                        title={settleLocked ? "Mode is locked because a payment has already been recorded" : ""}
+                        className={`flex items-center gap-1.5 py-1.5 pl-3 pr-2 rounded-lg border text-xs font-semibold transition-colors ${settleLocked ? 'bg-zinc-900/50 border-zinc-800/50 text-zinc-600 cursor-not-allowed' : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800'}`}
+                      >
+                        {settleMode === "smart" ? "Smart" : "Regular"}
+                        <Icons.ChevronDown size={14} className={`transition-transform ${isSettleModeOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {isSettleModeOpen && !settleLocked && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setIsSettleModeOpen(false)}></div>
+                          <div className="absolute right-0 top-full mt-2 w-56 bg-[#171719] border border-zinc-800 rounded-xl shadow-2xl z-20 overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => { changeSettleMode("smart"); setIsSettleModeOpen(false); }}
+                              className={`w-full text-left px-4 py-3 hover:bg-zinc-800 transition-colors ${settleMode === "smart" ? "bg-zinc-800/60" : ""}`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-semibold text-zinc-100">Smart</span>
+                                {settleMode === "smart" && <Icons.Check size={14} className="text-indigo-400" />}
+                              </div>
+                              <p className="text-[11px] text-zinc-500 mt-0.5">Fewest possible payments, balances simplified across the group.</p>
+                            </button>
+                            <div className="h-px bg-zinc-800"></div>
+                            <button
+                              type="button"
+                              onClick={() => { changeSettleMode("regular"); setIsSettleModeOpen(false); }}
+                              className={`w-full text-left px-4 py-3 hover:bg-zinc-800 transition-colors ${settleMode === "regular" ? "bg-zinc-800/60" : ""}`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-semibold text-zinc-100">Regular</span>
+                                {settleMode === "regular" && <Icons.Check size={14} className="text-indigo-400" />}
+                              </div>
+                              <p className="text-[11px] text-zinc-500 mt-0.5">Direct, unsimplified payments — exactly who owes whom.</p>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
                   <p className="text-xs text-zinc-500 mb-4">
                     {suggestions.length === 0 
                       ? (settlements.length > 0 ? "All balances are settled." : "Nothing to settle.")
-                      : `Simplified to the fewest payments possible — just ${suggestions.length} transaction${suggestions.length !== 1 ? "s" : ""} left.`}
+                      : settleMode === "smart"
+                        ? `Simplified to the fewest payments possible — just ${suggestions.length} transaction${suggestions.length !== 1 ? "s" : ""} left.`
+                        : `Direct payments between members — ${suggestions.length} transaction${suggestions.length !== 1 ? "s" : ""} to settle up.`}
                   </p>
 
                   {suggestions.length === 0 && expenses.length > 0 && (
