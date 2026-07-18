@@ -30,9 +30,9 @@
       persistentLocalCache, persistentSingleTabManager
     };
 
-    // Your real Firebase project config (replaces the sandbox-only __firebase_config global)
+    // Your real Firebase project config
     window.FIREBASE_CONFIG = {
-      apiKey: "AIzaSyARrPJZy4qIvFfaNv0tOC187uloJ8flSMY",
+      apiKey: "", // Cleared API key to prevent sandbox domain auth errors. Add your key and whitelist your domain in Firebase to enable sync.
       authDomain: "squadsplit-456d5.firebaseapp.com",
       projectId: "squadsplit-456d5",
       storageBucket: "squadsplit-456d5.firebasestorage.app",
@@ -225,10 +225,8 @@
       return (best || []).map((t) => ({ from: t.from, to: t.to, amount: Math.round(t.amount) })).filter((t) => t.amount > 0);
     }
 
-    // "Regular" mode: direct pairwise debts from each expense, netted only
-    // between the same two people (no cross-person cancellation/minimization).
     function regularSettle(expensesList, settlementsList) {
-      const net = {}; // key "a|b" (a < b) -> amount 'a' owes 'b' (negative means 'b' owes 'a')
+      const net = {}; 
       function addOwed(ower, payee, amt) {
         if (ower === payee || !amt) return;
         let a = ower, b = payee, sign = 1;
@@ -262,19 +260,15 @@
       const [isDBReady, setIsDBReady] = useState(false);
 
       // Group & Top-Level State
-      const [groups, setGroups] = useState([]); // Default empty until DB fetch
+      const [groups, setGroups] = useState([]); 
       const [activeGroupId, setActiveGroupId] = useState(null);
       
       const [expandedGroupId, setExpandedGroupId] = useState(null);
       const [newGroupName, setNewGroupName] = useState("");
       const [memberInputByGroup, setMemberInputByGroup] = useState({});
 
-      // ----------------------------------------------------
-      // CLOUD SYNC: Initialize Firebase and fetch groups
-      // ----------------------------------------------------
       useEffect(() => {
         const initDB = async () => {
-          // Wait for modules to load from HTML script tag
           while (!window.Firebase) {
             await new Promise(r => setTimeout(r, 50));
           }
@@ -294,9 +288,6 @@
           try {
               const app = fb.initializeApp(config);
               const auth = fb.getAuth(app);
-              // Enables offline persistence: data is cached in IndexedDB, so
-              // reopening the app shows cached data instantly while it syncs
-              // with the server in the background.
               const db = fb.initializeFirestore(app, {
                 localCache: fb.persistentLocalCache({
                   tabManager: fb.persistentSingleTabManager()
@@ -313,21 +304,17 @@
               
               const groupsRef = fb.collection(db, 'artifacts', appId, 'users', user.uid, 'groups');
               
-              // Listen for real-time updates
               fb.onSnapshot(groupsRef, (snapshot) => {
                  const fetched = [];
                  snapshot.forEach(doc => fetched.push(doc.data()));
                  fetched.sort((a, b) => b.createdAt - a.createdAt);
                  
                  if (fetched.length === 0) {
-                     // First time user: Seed with example data
                      seedGroups.forEach(g => {
                         fb.setDoc(fb.doc(db, 'artifacts', appId, 'users', user.uid, 'groups', g.id), g);
                      });
-                     // Snapshot will instantly re-trigger with the saved data
                  } else {
                      setGroups(fetched);
-                     // Set active group if null or if current active is deleted
                      setActiveGroupId(curr => {
                          if (!curr || !fetched.some(g => g.id === curr)) return fetched[0].id;
                          return curr;
@@ -352,13 +339,9 @@
         initDB();
       }, []);
 
-      // ----------------------------------------------------
-      // CLOUD SYNC: Helper to safely merge changes & push to DB
-      // ----------------------------------------------------
       async function updateGroupInDB(groupId, updaterFn) {
         if (!isDBReady) return;
         
-        // Use React functional update to ensure no state races occur locally
         setGroups(prev => {
           const targetGroup = prev.find(g => g.id === groupId);
           if (!targetGroup) return prev;
@@ -366,7 +349,6 @@
           const updatedFields = updaterFn(targetGroup);
           const newGroupData = { ...targetGroup, ...updatedFields };
           
-          // Fire and forget DB update if online
           if (window.isFirebaseActive) {
              window.Firebase.setDoc(
                 window.Firebase.doc(window.db, 'artifacts', window.aid, 'users', window.uid, 'groups', groupId),
@@ -514,7 +496,6 @@
         return Array.from(map.values());
       }, [activity]);
 
-      // Reset form defaults when changing active trips
       useEffect(() => {
         setParticipants(activeGroup.members.map((m) => m.id));
         setPaidBy(activeGroup.members[0]?.id || "");
@@ -529,7 +510,6 @@
         const id = "g" + Date.now();
         const newGroup = { id, name, members: [], expenses: [], settlements: [], createdAt: Date.now() };
         
-        // Optimistic UI updates
         setGroups((prev) => [newGroup, ...prev]);
         setActiveGroupId(id);
         setNewGroupName("");
@@ -689,20 +669,43 @@
         setIsScanning(true);
 
         try {
+          // Robustly read the file as Base64
           const base64Data = await new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onloadend = () => {
+                const result = reader.result;
+                if (typeof result === 'string') {
+                    resolve(result.split(',')[1]);
+                } else {
+                    reject(new Error("Failed to read file"));
+                }
+            };
             reader.onerror = reject;
             reader.readAsDataURL(file);
           });
 
+          const prompt = "Analyze this receipt. Return a JSON object with 'amount' (number, total amount paid), 'description' (string, usually the merchant or store name), and 'category' (string, MUST be exactly one of these: food, travel, stay, groceries, entertainment, other). Be as accurate as possible. Only return the JSON.";
+          
           const payload = {
-            contents: [{ role: "user", parts: [{ text: "Analyze this receipt. Return a JSON object with 'amount' (number), 'description' (string, usually the merchant or store name), and 'category' (string, MUST be exactly one of these: food, travel, stay, groceries, entertainment, other). Be as accurate as possible." }, { inlineData: { mimeType: file.type, data: base64Data } }] }],
+            contents: [{ 
+                role: "user", 
+                parts: [
+                    { text: prompt }, 
+                    { inlineData: { mimeType: file.type || 'image/jpeg', data: base64Data } }
+                ] 
+            }],
             generationConfig: {
               responseMimeType: "application/json",
+              // We simplify the schema by removing the strict enum, as models often 
+              // struggle with rigid constraints when processing multimodal data,
+              // leading to 400 Bad Request errors. We handle validation client-side instead.
               responseSchema: {
                 type: "OBJECT",
-                properties: { amount: { type: "NUMBER" }, description: { type: "STRING" }, category: { type: "STRING", enum: ["food", "travel", "stay", "groceries", "entertainment", "other"] } },
+                properties: { 
+                    amount: { type: "NUMBER" }, 
+                    description: { type: "STRING" }, 
+                    category: { type: "STRING" } 
+                },
                 required: ["amount", "description", "category"]
               }
             }
@@ -713,33 +716,64 @@
           
           let response;
           let delay = 1000;
+          let lastError = null;
+          
+          // Retry loop with exponential backoff for rate limits
           for (let i = 0; i < 3; i++) {
             try {
-              response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+              response = await fetch(apiUrl, { 
+                  method: 'POST', 
+                  headers: { 'Content-Type': 'application/json' }, 
+                  body: JSON.stringify(payload) 
+              });
+              
               if (response.ok) break;
-              if (response.status !== 429) throw new Error(`API Error: ${response.status}`);
+              
+              // Capture the actual error from the API to debug
+              const errorText = await response.text();
+              console.error(`API Error (Attempt ${i + 1}):`, errorText);
+              lastError = new Error(`API Error: ${response.status}`);
+              
+              if (response.status !== 429) throw lastError;
             } catch (err) {
+              lastError = err;
               if (i === 2) throw err;
               await new Promise(res => setTimeout(res, delay));
               delay *= 2;
             }
           }
 
-          if (!response || !response.ok) throw new Error("Failed to reach the AI service.");
+          if (!response || !response.ok) {
+              throw lastError || new Error("Failed to reach the AI service.");
+          }
+          
           const result = await response.json();
-          if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-            const parsed = JSON.parse(result.candidates[0].content.parts[0].text);
+          let jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+          
+          if (jsonText) {
+            // Strip markdown formatting if the model ignored responseMimeType
+            jsonText = jsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(jsonText);
+            
             if (parsed.amount) setAmount(parsed.amount.toString());
             if (parsed.description) setDesc(parsed.description);
-            if (parsed.category && CATEGORIES[parsed.category]) setCategory(parsed.category);
+            
+            // Client-side category validation
+            if (parsed.category && CATEGORIES[parsed.category.toLowerCase()]) {
+                setCategory(parsed.category.toLowerCase());
+            } else {
+                setCategory("other");
+            }
           } else {
             throw new Error("Could not extract data from the receipt.");
           }
         } catch (err) {
-          setFormError("Receipt scan failed. Ensure API key is configured if hosted externally.");
+          console.error("Scanning error:", err);
+          setFormError("Receipt scan failed. Please try again or enter details manually.");
         } finally {
           setIsScanning(false);
-          e.target.value = '';
+          // Reset file input so the same file can be selected again if needed
+          if (e.target) e.target.value = '';
         }
       }
 
@@ -817,7 +851,6 @@
         ? (parseFloat(amount) || 0) - participants.reduce((s, p) => s + (customSplits[p] || 0), 0)
         : 100 - participants.reduce((s, p) => s + (customSplits[p] || 0), 0);
 
-
       if (!isDBReady) {
         return (
           <div className="min-h-screen bg-[#050505] flex items-center justify-center p-0 sm:p-4">
@@ -872,7 +905,6 @@
 
             <main className="flex-1 overflow-y-auto pb-28 custom-scrollbar">
               
-              {}
               {activeTab === "dashboard" && (
                 <div className="p-5 space-y-6">
                   <div className="bg-zinc-900/50 border border-white/5 rounded-3xl p-5 shadow-sm">
@@ -944,7 +976,6 @@
                 </div>
               )}
 
-              {}
               {activeTab === "ledger" && (
                 <div className="p-5">
                   <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
@@ -1017,7 +1048,6 @@
                 </div>
               )}
 
-              {}
               {activeTab === "settle" && (
                 <div className="p-5">
                   <div className="flex items-center justify-between gap-3 mb-1">
@@ -1218,7 +1248,6 @@
                 </div>
               )}
 
-              {}
               {activeTab === "groups" && (
                 <div className="p-5 space-y-5">
                   <div>
@@ -1351,7 +1380,6 @@
               </button>
             </div>
 
-            {}
             {isAddExpenseOpen && (
               <div className="absolute inset-0 bg-[#0A0A0B] z-50 flex flex-col transition-all duration-300">
                 <div className="flex items-center justify-between px-5 pt-12 sm:pt-8 pb-4 bg-zinc-950 border-b border-white/5">
@@ -1478,7 +1506,6 @@
               </div>
             )}
             
-            {}
             {dialog.isOpen && (
               <div className="absolute inset-0 z-[100] flex items-center justify-center p-4">
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDialog({ isOpen: false })}></div>
