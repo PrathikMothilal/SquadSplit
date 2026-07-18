@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SquadSplit</title>
+  
+  <!-- Load Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Load React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Load Babel for JSX compiling in the browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      background-color: #050505;
+      color: #f4f4f5;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #3f3f46;
+      border-radius: 4px;
+    }
+    .hide-scroll-bar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scroll-bar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    
+    /* Remove number input spinners */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="selection:bg-indigo-500/30">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    // --- Inline Icon Components (Replacing Lucide) ---
+    const Icon = ({ d, size=24, className="" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        {d.map((pathStr, i) => <path key={i} d={pathStr} />)}
+      </svg>
+    );
+
+    const Icons = {
+      Plus: (p) => <Icon d={["M12 5v14", "M5 12h14"]} {...p} />,
+      X: (p) => <Icon d={["M18 6 6 18", "m6 6 12 12"]} {...p} />,
+      Trash2: (p) => <Icon d={["M3 6h18", "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6", "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2", "M10 11v6", "M14 11v6"]} {...p} />,
+      ArrowRight: (p) => <Icon d={["M5 12h14", "m12 5 7 7-7 7"]} {...p} />,
+      ArrowLeftRight: (p) => <Icon d={["M8 3 2 9l6 6", "M2 9h20", "m16 21 6-6-6-6", "M22 15H2"]} {...p} />,
+      Check: (p) => <Icon d={["M20 6 9 17l-5-5"]} {...p} />,
+      IndianRupee: (p) => <Icon d={["M6 3h12", "M6 8h12", "m6 13 8.5-8", "M6 13h3c4 0 4-5 0-5"]} {...p} />,
+      UserPlus: (p) => <Icon d={["M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2", "M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M20 8v6", "M23 11h-6"]} {...p} />,
+      Wallet: (p) => <Icon d={["M21 12V7H5a2 2 0 0 1 0-4h14v4", "M3 5v14a2 2 0 0 0 2 2h16v-5", "M18 12a2 2 0 0 0 0 4h4v-4Z"]} {...p} />,
+      Users: (p) => <Icon d={["M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2", "M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M18 8a5 5 0 0 1 5 5v2"]} {...p} />,
+      Receipt: (p) => <Icon d={["M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z", "M16 8h-6", "M16 12h-8", "M16 16h-8"]} {...p} />,
+      LayoutGrid: (p) => <Icon d={["M3 3h7v7H3z", "M14 3h7v7h-7z", "M14 14h7v7h-7z", "M3 14h7v7H3z"]} {...p} />,
+      Utensils: (p) => <Icon d={["M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2", "M7 2v20", "M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3v-7"]} {...p} />,
+      Plane: (p) => <Icon d={["M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.6L3 8l6 5-3 3-3-1-2 2 4 4 2-2-1-3 3-3 5 6 1.2-.7c.4-.2.7-.6.6-1.1Z"]} {...p} />,
+      Home: (p) => <Icon d={["M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", "M9 22V12h6v10"]} {...p} />,
+      ShoppingCart: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className}><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>,
+      Ticket: (p) => <Icon d={["M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z", "M13 5v2", "M13 17v2", "M13 11v2"]} {...p} />,
+      MoreHorizontal: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className}><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>,
+      ChevronLeft: (p) => <Icon d={["m15 18-6-6 6-6"]} {...p} />,
+      ChevronDown: (p) => <Icon d={["m6 9 6 6 6-6"]} {...p} />,
+      ChevronRight: (p) => <Icon d={["m9 18 6-6-6-6"]} {...p} />,
+      PieChart: (p) => <Icon d={["M21.21 15.89A10 10 0 1 1 8 2.83", "M22 12A10 10 0 0 0 12 2v10z"]} {...p} />,
+      Camera: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>,
+      Loader2: (p) => <Icon d={["M21 12a9 9 0 1 1-6.219-8.56"]} {...p} />,
+    };
+
+    // --- State and Constants ---
+    const AVATAR_COLORS = ["bg-indigo-500", "bg-emerald-500", "bg-rose-500", "bg-amber-500", "bg-cyan-500", "bg-fuchsia-500", "bg-lime-500"];
+
+    const CATEGORIES = {
+      food: { id: "food", label: "Food & Drink", icon: Icons.Utensils, color: "text-amber-400", bg: "bg-amber-400/10" },
+      travel: { id: "travel", label: "Travel", icon: Icons.Plane, color: "text-blue-400", bg: "bg-blue-400/10" },
+      stay: { id: "stay", label: "Accommodation", icon: Icons.Home, color: "text-indigo-400", bg: "bg-indigo-400/10" },
+      groceries: { id: "groceries", label: "Groceries", icon: Icons.ShoppingCart, color: "text-emerald-400", bg: "bg-emerald-400/10" },
+      entertainment: { id: "entertainment", label: "Entertainment", icon: Icons.Ticket, color: "text-fuchsia-400", bg: "bg-fuchsia-400/10" },
+      other: { id: "other", label: "Other", icon: Icons.MoreHorizontal, color: "text-zinc-400", bg: "bg-zinc-400/10" },
+    };
+
+    const seedMembers = [
+      { id: "m1", name: "You", color: AVATAR_COLORS[0] },
+      { id: "m2", name: "Meera", color: AVATAR_COLORS[1] },
+      { id: "m3", name: "Arjun", color: AVATAR_COLORS[2] },
+    ];
+
+    const seedExpenses = [
+      { id: "e1", description: "Airbnb - Coorg", amount: 9000, category: "stay", paidBy: "m1", participants: ["m1", "m2", "m3"], splitType: "equal", customSplits: {}, date: Date.now() - 86400000 * 3 },
+      { id: "e2", description: "Groceries", amount: 1450, category: "groceries", paidBy: "m2", participants: ["m1", "m2", "m3"], splitType: "equal", customSplits: {}, date: Date.now() - 86400000 * 2 },
+      { id: "e3", description: "Petrol", amount: 800, category: "travel", paidBy: "m3", participants: ["m1", "m3"], splitType: "equal", customSplits: {}, date: Date.now() - 86400000 },
+      { id: "e4", description: "Pub Hopping", amount: 4200, category: "food", paidBy: "m2", participants: ["m1", "m2", "m3"], splitType: "equal", customSplits: {}, date: Date.now() - 43200000 },
+    ];
+
+    function formatINR(n) {
+      if (!isFinite(n)) n = 0;
+      const sign = n < -0.5 ? "-" : "";
+      return sign + "₹" + Math.round(Math.abs(n)).toLocaleString("en-IN");
+    }
+
+    function initials(name) {
+      return name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+    }
+
+    function formatDate(ts) {
+      const date = new Date(ts);
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      if (date.toDateString() === today.toDateString()) return "Today";
+      if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+      return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+    }
+
+    function ExpenseSplitApp() {
+      const [members, setMembers] = useState(seedMembers);
+      const [expenses, setExpenses] = useState(seedExpenses);
+      const [settlements, setSettlements] = useState([]);
+      const [activeTab, setActiveTab] = useState("dashboard");
+      const [expandedSettleMember, setExpandedSettleMember] = useState(null);
+      
+      const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+      const [newMemberName, setNewMemberName] = useState("");
+      const [showAddMember, setShowAddMember] = useState(false);
+
+      const [desc, setDesc] = useState("");
+      const [amount, setAmount] = useState("");
+      const [category, setCategory] = useState("other");
+      const [paidBy, setPaidBy] = useState("m1");
+      const [participants, setParticipants] = useState(["m1", "m2", "m3"]);
+      const [splitType, setSplitType] = useState("equal");
+      const [customSplits, setCustomSplits] = useState({});
+      const [formError, setFormError] = useState("");
+      const [isScanning, setIsScanning] = useState(false);
+
+      const effectivePaidBy = members.find((m) => m.id === paidBy) ? paidBy : (members[0]?.id || "");
+      const memberOf = (id) => members.find((m) => m.id === id) || { name: "Unknown", color: "bg-zinc-600" };
+
+      const balances = useMemo(() => {
+        const bal = {};
+        members.forEach((m) => (bal[m.id] = 0));
+        
+        expenses.forEach((e) => {
+          bal[e.paidBy] = (bal[e.paidBy] || 0) + e.amount;
+          e.participants.forEach((p) => {
+            let share = 0;
+            if (e.splitType === "equal") {
+              share = e.amount / e.participants.length;
+            } else {
+              share = e.customSplits[p] || 0;
+            }
+            bal[p] = (bal[p] || 0) - share;
+          });
+        });
+
+        settlements.forEach((s) => {
+          bal[s.from] = (bal[s.from] || 0) + s.amount;
+          bal[s.to] = (bal[s.to] || 0) - s.amount;
+        });
+        return bal;
+      }, [members, expenses, settlements]);
+
+      const suggestions = useMemo(() => {
+        const bal = { ...balances };
+        const creditors = Object.entries(bal).filter(([, v]) => v > 0.5).map(([id, v]) => ({ id, amt: v })).sort((a, b) => b.amt - a.amt);
+        const debtors = Object.entries(bal).filter(([, v]) => v < -0.5).map(([id, v]) => ({ id, amt: -v })).sort((a, b) => b.amt - a.amt);
+        
+        const res = [];
+        let ci = 0, di = 0;
+        while (ci < creditors.length && di < debtors.length) {
+          const c = creditors[ci], d = debtors[di];
+          const amt = Math.min(c.amt, d.amt);
+          res.push({ from: d.id, to: c.id, amount: Math.round(amt) });
+          c.amt -= amt; d.amt -= amt;
+          if (c.amt < 0.5) ci++;
+          if (d.amt < 0.5) di++;
+        }
+        return res;
+      }, [balances]);
+
+      const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
+
+      const categoryBreakdown = useMemo(() => {
+        const breakdown = {};
+        Object.keys(CATEGORIES).forEach(k => breakdown[k] = 0);
+        expenses.forEach(e => {
+          breakdown[e.category] = (breakdown[e.category] || 0) + e.amount;
+        });
+        return Object.entries(breakdown)
+          .map(([cat, amt]) => ({ ...CATEGORIES[cat], amount: amt, percent: totalSpent ? (amt / totalSpent) * 100 : 0 }))
+          .filter(c => c.amount > 0)
+          .sort((a, b) => b.amount - a.amount);
+      }, [expenses, totalSpent]);
+
+      const activity = useMemo(() => {
+        const a = expenses.map((e) => ({ ...e, type: "expense" }));
+        const s = settlements.map((s) => ({ ...s, type: "settlement" }));
+        return [...a, ...s].sort((x, y) => y.date - x.date);
+      }, [expenses, settlements]);
+
+      function handleAddMember(e) {
+        e.preventDefault();
+        const name = newMemberName.trim();
+        if (!name) return;
+        const id = "m" + Date.now();
+        setMembers([...members, { id, name, color: AVATAR_COLORS[members.length % AVATAR_COLORS.length] }]);
+        setParticipants((p) => [...p, id]);
+        setNewMemberName("");
+        setShowAddMember(false);
+      }
+
+      function removeMember(id) {
+        const used = expenses.some((e) => e.paidBy === id || e.participants.includes(id)) || settlements.some((s) => s.from === id || s.to === id);
+        if (used) return;
+        setMembers(members.filter((m) => m.id !== id));
+        setParticipants((p) => p.filter((pid) => pid !== id));
+      }
+
+      function toggleParticipant(id) {
+        setParticipants((prev) => {
+          const isSelected = prev.includes(id);
+          if (isSelected && prev.length === 1) return prev; 
+          return isSelected ? prev.filter((p) => p !== id) : [...prev, id];
+        });
+      }
+
+      function handleCustomSplitChange(pid, val) {
+        const newVal = parseFloat(val) || 0;
+        setCustomSplits(prev => ({ ...prev, [pid]: newVal }));
+      }
+
+      function handleAddExpense(e) {
+        e.preventDefault();
+        setFormError("");
+        const amt = parseFloat(amount);
+        
+        if (!amt || amt <= 0) return setFormError("Please enter a valid amount.");
+        if (!desc.trim()) return setFormError("Please add a description.");
+        if (participants.length === 0) return setFormError("Select at least one person.");
+
+        let finalCustomSplits = { ...customSplits };
+
+        if (splitType === "exact") {
+          const sum = participants.reduce((s, p) => s + (finalCustomSplits[p] || 0), 0);
+          if (Math.abs(sum - amt) > 0.5) return setFormError(`Exact splits must add up to ${formatINR(amt)}. Current sum: ${formatINR(sum)}.`);
+        } else if (splitType === "percentage") {
+          const percentSum = participants.reduce((s, p) => s + (finalCustomSplits[p] || 0), 0);
+          if (Math.abs(percentSum - 100) > 0.5) return setFormError(`Percentages must add up to 100%. Current sum: ${percentSum}%.`);
+          
+          participants.forEach(p => {
+            finalCustomSplits[p] = (finalCustomSplits[p] / 100) * amt;
+          });
+        }
+
+        const newExpense = {
+          id: "e" + Date.now(),
+          description: desc.trim(),
+          amount: amt,
+          category,
+          paidBy: effectivePaidBy,
+          participants: [...participants],
+          splitType: splitType === "percentage" ? "exact" : splitType, 
+          customSplits: finalCustomSplits,
+          date: Date.now(),
+        };
+
+        setExpenses([newExpense, ...expenses]);
+        resetExpenseForm();
+        setIsAddExpenseOpen(false);
+      }
+
+      function resetExpenseForm() {
+        setDesc(""); 
+        setAmount(""); 
+        setCustomSplits({}); 
+        setSplitType("equal");
+        setCategory("other");
+      }
+
+      async function handleReceiptUpload(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setFormError("");
+        setIsScanning(true);
+
+        try {
+          const base64Data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+
+          const payload = {
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  { text: "Analyze this receipt. Return a JSON object with 'amount' (number), 'description' (string, usually the merchant or store name), and 'category' (string, MUST be exactly one of these: food, travel, stay, groceries, entertainment, other). Be as accurate as possible." },
+                  { inlineData: { mimeType: file.type, data: base64Data } }
+                ]
+              }
+            ],
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "OBJECT",
+                properties: {
+                  amount: { type: "NUMBER" },
+                  description: { type: "STRING" },
+                  category: { type: "STRING", enum: ["food", "travel", "stay", "groceries", "entertainment", "other"] }
+                },
+                required: ["amount", "description", "category"]
+              }
+            }
+          };
+
+          // IMPORTANT: To host on GitHub pages, insert your free Gemini API key here!
+          const apiKey = ""; 
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+          
+          let response;
+          let delay = 1000;
+          for (let i = 0; i < 3; i++) {
+            try {
+              response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+              if (response.ok) break;
+              if (response.status !== 429) throw new Error(`API Error: ${response.status}`);
+            } catch (err) {
+              if (i === 2) throw err;
+              await new Promise(res => setTimeout(res, delay));
+              delay *= 2;
+            }
+          }
+
+          if (!response || !response.ok) throw new Error("Failed to reach the AI service.");
+
+          const result = await response.json();
+          if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+            const jsonText = result.candidates[0].content.parts[0].text;
+            const parsed = JSON.parse(jsonText);
+            
+            if (parsed.amount) setAmount(parsed.amount.toString());
+            if (parsed.description) setDesc(parsed.description);
+            if (parsed.category && CATEGORIES[parsed.category]) setCategory(parsed.category);
+          } else {
+            throw new Error("Could not extract data from the receipt.");
+          }
+
+        } catch (err) {
+          setFormError("Receipt scan failed. Ensure API key is configured if hosted externally.");
+        } finally {
+          setIsScanning(false);
+          e.target.value = '';
+        }
+      }
+
+      function handleSettle(s) {
+        setSettlements([...settlements, { id: "s" + Date.now(), from: s.from, to: s.to, amount: s.amount, date: Date.now() }]);
+      }
+
+      function deleteExpense(id) {
+        setExpenses(expenses.filter((e) => e.id !== id));
+      }
+
+      const customRemaining = splitType === "exact" 
+        ? (parseFloat(amount) || 0) - participants.reduce((s, p) => s + (customSplits[p] || 0), 0)
+        : 100 - participants.reduce((s, p) => s + (customSplits[p] || 0), 0);
+
+      return (
+        <div className="min-h-screen bg-[#050505] flex items-center justify-center p-0 sm:p-4">
+          <div className="w-full h-[100dvh] sm:h-[850px] sm:max-h-[90vh] sm:max-w-[420px] bg-[#0A0A0B] sm:rounded-[2.5rem] sm:border-[6px] border-zinc-800 shadow-2xl relative overflow-hidden flex flex-col">
+            
+            <div className="hidden sm:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-zinc-800 rounded-b-2xl z-50"></div>
+
+            <header className="px-5 pt-12 sm:pt-8 pb-4 bg-gradient-to-b from-indigo-950/20 to-transparent sticky top-0 z-30 backdrop-blur-md border-b border-white/5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <Icons.Wallet size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h1 className="font-bold text-lg leading-tight tracking-tight text-zinc-100">SquadSplit</h1>
+                    <p className="text-[11px] font-medium text-zinc-500">Shared Finances</p>
+                  </div>
+                </div>
+                <div className="flex -space-x-2">
+                  {members.slice(0, 3).map(m => (
+                    <div key={m.id} className={`w-8 h-8 rounded-full border-2 border-[#0A0A0B] flex items-center justify-center text-[10px] font-bold text-white ${m.color}`}>
+                      {initials(m.name)}
+                    </div>
+                  ))}
+                  {members.length > 3 && (
+                    <div className="w-8 h-8 rounded-full border-2 border-[#0A0A0B] bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-400">
+                      +{members.length - 3}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Total Group Spend</span>
+                <span className="text-3xl font-bold tracking-tight text-white">{formatINR(totalSpent)}</span>
+              </div>
+            </header>
+
+            <main className="flex-1 overflow-y-auto pb-28 custom-scrollbar">
+              
+              {activeTab === "dashboard" && (
+                <div className="p-5 space-y-6">
+                  {totalSpent > 0 && (
+                    <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4">
+                      <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                        <Icons.PieChart size={16} className="text-indigo-400"/> Spending by Category
+                      </h3>
+                      
+                      <div className="h-3 w-full bg-zinc-800 rounded-full overflow-hidden flex mb-5">
+                        {categoryBreakdown.map((cat, i) => (
+                          <div key={cat.id} style={{ width: `${cat.percent}%` }} className={`h-full ${CATEGORIES[cat.id].bg.replace('/10', '')} opacity-80`} />
+                        ))}
+                      </div>
+
+                      <div className="space-y-3">
+                        {categoryBreakdown.map(cat => (
+                          <div key={cat.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full ${cat.bg} ${cat.color} flex items-center justify-center`}>
+                                <cat.icon size={14} />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-zinc-200">{cat.label}</p>
+                                <p className="text-xs text-zinc-500">{cat.percent.toFixed(0)}%</p>
+                              </div>
+                            </div>
+                            <span className="text-sm font-semibold text-zinc-100">{formatINR(cat.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
+                        <Icons.Users size={16} className="text-indigo-400"/> Group Balances
+                      </h3>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      {members.map((m) => {
+                        const b = balances[m.id] || 0;
+                        const used = expenses.some((e) => e.paidBy === m.id || e.participants.includes(m.id)) || settlements.some((s) => s.from === m.id || s.to === m.id);
+                        return (
+                          <div className="flex items-center gap-3 p-2 -mx-2 rounded-xl hover:bg-white/5 transition-colors group" key={m.id}>
+                            <div className={`w-10 h-10 rounded-full flex flex-shrink-0 items-center justify-center text-xs font-bold text-white shadow-inner ${m.color}`}>
+                              {initials(m.name)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-zinc-100 truncate">{m.name}</p>
+                              <p className="text-xs text-zinc-500 truncate">{used ? "Active member" : "No activity"}</p>
+                            </div>
+                            <div className="flex flex-col items-end flex-shrink-0">
+                              <span className={`text-sm font-bold ${b > 0.5 ? "text-emerald-400" : b < -0.5 ? "text-rose-400" : "text-zinc-500"}`}>
+                                {b > 0.5 ? `+${formatINR(b)}` : b < -0.5 ? `${formatINR(b)}` : "Settled"}
+                              </span>
+                            </div>
+                            {!used && members.length > 1 && (
+                              <button onClick={() => removeMember(m.id)} className="opacity-0 group-hover:opacity-100 p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-400/10 rounded-full transition-all">
+                                <Icons.X size={14} />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {showAddMember ? (
+                      <form onSubmit={handleAddMember} className="mt-4 flex items-center gap-2">
+                        <input autoFocus value={newMemberName} onChange={(e) => setNewMemberName(e.target.value)} placeholder="Enter name..." className="flex-1 bg-zinc-950 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition-colors" />
+                        <button type="submit" className="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center hover:bg-indigo-600 transition-colors"><Icons.Check size={16} /></button>
+                        <button type="button" onClick={() => { setShowAddMember(false); setNewMemberName(""); }} className="w-10 h-10 rounded-xl bg-zinc-800 text-zinc-400 flex items-center justify-center hover:bg-zinc-700 transition-colors"><Icons.X size={16} /></button>
+                      </form>
+                    ) : (
+                      <button onClick={() => setShowAddMember(true)} className="mt-4 w-full py-3 rounded-xl border border-dashed border-zinc-700 text-zinc-400 text-sm font-medium flex items-center justify-center gap-2 hover:bg-white/5 hover:text-zinc-200 transition-colors">
+                        <Icons.UserPlus size={16} /> Add Person
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {}
+              {activeTab === "ledger" && (
+                <div className="p-5">
+                  <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Icons.Receipt size={20} className="text-indigo-400" /> Activity Ledger
+                  </h2>
+                  <div className="space-y-3">
+                    {activity.length === 0 ? (
+                      <div className="text-center py-12 px-4 bg-zinc-900/30 rounded-2xl border border-dashed border-zinc-800">
+                        <p className="text-zinc-500 text-sm">No expenses yet. Tap the + button to add one.</p>
+                      </div>
+                    ) : (
+                      activity.map((item) =>
+                        item.type === "settlement" ? (
+                          <div className="flex items-center gap-3 p-3 bg-zinc-900/40 border border-white/5 rounded-2xl" key={item.id}>
+                            <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 flex-shrink-0">
+                              <Icons.Check size={18} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-zinc-200 truncate">
+                                {memberOf(item.from).name} paid {memberOf(item.to).name}
+                              </p>
+                              <p className="text-xs text-zinc-500">{formatDate(item.date)}</p>
+                            </div>
+                            <div className="text-sm font-bold text-emerald-400">{formatINR(item.amount)}</div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3 p-3 bg-zinc-900/60 border border-white/5 rounded-2xl relative overflow-hidden group" key={item.id}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${CATEGORIES[item.category]?.bg || 'bg-zinc-800'} ${CATEGORIES[item.category]?.color || 'text-zinc-400'}`}>
+                              {React.createElement(CATEGORIES[item.category]?.icon || Icons.MoreHorizontal, { size: 18 })}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-zinc-100 truncate">{item.description}</p>
+                              <p className="text-xs text-zinc-500 truncate">
+                                {memberOf(item.paidBy).name} paid · {formatDate(item.date)}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <span className="text-sm font-bold text-white">{formatINR(item.amount)}</span>
+                            </div>
+                            <button onClick={() => deleteExpense(item.id)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-rose-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                              <Icons.Trash2 size={14} />
+                            </button>
+                          </div>
+                        )
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "settle" && (
+                <div className="p-5">
+                  <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Icons.ArrowLeftRight size={20} className="text-indigo-400" /> Settle Up
+                  </h2>
+                  
+                  {suggestions.length === 0 ? (
+                    <div className="text-center py-12 px-4 bg-zinc-900/30 rounded-2xl border border-dashed border-zinc-800">
+                      <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Icons.Check size={28} className="text-emerald-500" />
+                      </div>
+                      <h3 className="text-zinc-200 font-medium mb-1">All Settled Up!</h3>
+                      <p className="text-zinc-500 text-sm">Nobody owes anything.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {members.map((member) => {
+                        const owes = suggestions.filter((s) => s.from === member.id);
+                        const getsBack = suggestions.filter((s) => s.to === member.id);
+                        const isSettled = owes.length === 0 && getsBack.length === 0;
+                        const used = expenses.some((e) => e.paidBy === member.id || e.participants.includes(member.id)) || settlements.some((s) => s.from === member.id || s.to === member.id);
+                        
+                        if (!used) return null;
+                        const isExpanded = expandedSettleMember === member.id;
+                        const netBalance = balances[member.id] || 0;
+
+                        return (
+                          <div key={member.id} className={`bg-[#0F0F11] rounded-2xl border transition-all duration-300 overflow-hidden ${isExpanded ? 'border-indigo-500/30 shadow-[0_0_20px_rgba(99,102,241,0.05)]' : 'border-white/5'}`}>
+                            <button onClick={() => setExpandedSettleMember(isExpanded ? null : member.id)} className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
+                              <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-inner ${member.color}`}>
+                                  {initials(member.name)}
+                                </div>
+                                <div className="text-left">
+                                  <div className="text-zinc-100 font-bold text-base">{member.name}</div>
+                                  <div className="text-xs font-medium mt-0.5">
+                                    {isSettled ? (
+                                      <span className="text-zinc-500">Settled up</span>
+                                    ) : netBalance < -0.5 ? (
+                                      <span className="text-rose-400">Owes {formatINR(Math.abs(netBalance))}</span>
+                                    ) : (
+                                      <span className="text-emerald-400">Gets back {formatINR(netBalance)}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className={`text-zinc-500 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-indigo-400' : ''}`}>
+                                <Icons.ChevronDown size={20} />
+                              </div>
+                            </button>
+
+                            <div className={`grid transition-all duration-300 ease-in-out ${isExpanded && !isSettled ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                              <div className="overflow-hidden">
+                                <div className="p-4 pt-0 bg-zinc-950/50">
+                                  <div className="space-y-4 mt-2">
+                                    {owes.map((s, idx) => (
+                                      <div key={`owe-${idx}`} className="bg-[#171719] p-4 rounded-xl border border-white/5">
+                                        <div className="flex items-center justify-between mb-4">
+                                          <div className="flex flex-col items-center gap-2">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white ${member.color}`}>{initials(member.name)}</div>
+                                            <span className="text-[11px] font-medium text-zinc-400">{member.name}</span>
+                                          </div>
+                                          <div className="flex flex-col items-center flex-1 px-3">
+                                            <span className="text-emerald-400 font-bold text-[17px] mb-1">{formatINR(s.amount)}</span>
+                                            <div className="w-full h-px bg-zinc-700 relative flex justify-end items-center">
+                                              <Icons.ChevronRight size={14} className="text-zinc-600 absolute -right-1"/>
+                                            </div>
+                                          </div>
+                                          <div className="flex flex-col items-center gap-2">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white ${memberOf(s.to).color}`}>{initials(memberOf(s.to).name)}</div>
+                                            <span className="text-[11px] font-medium text-zinc-400">{memberOf(s.to).name}</span>
+                                          </div>
+                                        </div>
+                                        <button onClick={(e) => { e.stopPropagation(); handleSettle(s); }} className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-[#050505] text-sm font-bold rounded-lg transition-colors">
+                                          Record Payment
+                                        </button>
+                                      </div>
+                                    ))}
+                                    {getsBack.map((s, idx) => (
+                                      <div key={`get-${idx}`} className="bg-[#171719] p-4 rounded-xl border border-white/5">
+                                        <div className="flex items-center justify-between mb-4">
+                                          <div className="flex flex-col items-center gap-2">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white ${memberOf(s.from).color}`}>{initials(memberOf(s.from).name)}</div>
+                                            <span className="text-[11px] font-medium text-zinc-400">{memberOf(s.from).name}</span>
+                                          </div>
+                                          <div className="flex flex-col items-center flex-1 px-3">
+                                            <span className="text-emerald-400 font-bold text-[17px] mb-1">{formatINR(s.amount)}</span>
+                                            <div className="w-full h-px bg-zinc-700 relative flex justify-end items-center">
+                                              <Icons.ChevronRight size={14} className="text-zinc-600 absolute -right-1"/>
+                                            </div>
+                                          </div>
+                                          <div className="flex flex-col items-center gap-2">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white ${member.color}`}>{initials(member.name)}</div>
+                                            <span className="text-[11px] font-medium text-zinc-400">{member.name}</span>
+                                          </div>
+                                        </div>
+                                        <button onClick={(e) => { e.stopPropagation(); handleSettle(s); }} className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-[#050505] text-sm font-bold rounded-lg transition-colors">
+                                          Record Payment
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </main>
+
+            {}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[380px] bg-zinc-900/90 backdrop-blur-xl border border-white/10 rounded-3xl px-2 py-2 flex items-center justify-between shadow-2xl z-40">
+              <button onClick={() => setActiveTab("dashboard")} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-2xl transition-all ${activeTab === "dashboard" ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"}`}>
+                <Icons.LayoutGrid size={22} className={activeTab === "dashboard" ? "text-indigo-400" : ""} />
+                <span className="text-[10px] font-medium">Home</span>
+              </button>
+
+              <button onClick={() => setActiveTab("ledger")} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-2xl transition-all relative ${activeTab === "ledger" ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"}`}>
+                <Icons.Receipt size={22} className={activeTab === "ledger" ? "text-indigo-400" : ""} />
+                <span className="text-[10px] font-medium">Ledger</span>
+                {activity.length > 0 && activeTab !== "ledger" && (
+                  <span className="absolute top-1 right-[25%] w-2 h-2 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.8)]"></span>
+                )}
+              </button>
+
+              <div className="relative -top-6 px-2">
+                <button onClick={() => setIsAddExpenseOpen(true)} className="w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-500 text-white flex items-center justify-center shadow-[0_8px_20px_rgba(99,102,241,0.4)] hover:scale-105 active:scale-95 transition-all border-4 border-[#0A0A0B]">
+                  <Icons.Plus size={28} strokeWidth={2.5} />
+                </button>
+              </div>
+
+              <button onClick={() => setActiveTab("settle")} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-2xl transition-all relative ${activeTab === "settle" ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"}`}>
+                <Icons.ArrowLeftRight size={22} className={activeTab === "settle" ? "text-indigo-400" : ""} />
+                <span className="text-[10px] font-medium">Settle</span>
+                {suggestions.length > 0 && (
+                  <span className="absolute top-1 right-[25%] w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-zinc-900">
+                    {suggestions.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {isAddExpenseOpen && (
+              <div className="absolute inset-0 bg-[#0A0A0B] z-50 flex flex-col transition-all duration-300">
+                <div className="flex items-center justify-between px-5 pt-12 sm:pt-8 pb-4 bg-zinc-950 border-b border-white/5">
+                  <button onClick={() => setIsAddExpenseOpen(false)} className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-zinc-400 hover:bg-zinc-900 transition-colors">
+                    <Icons.ChevronLeft size={24} />
+                  </button>
+                  <h2 className="text-lg font-bold text-white">New Expense</h2>
+                  <div className="w-10"></div> 
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar pb-24">
+                  <form onSubmit={handleAddExpense} className="space-y-6">
+                    
+                    <div className="bg-zinc-900/50 p-5 rounded-3xl border border-white/5 flex flex-col items-center text-center">
+                      <div className="flex items-center justify-center text-5xl font-bold text-white mb-6 transition-all">
+                        <span className={`mr-1 text-4xl ${isScanning ? 'text-zinc-700' : 'text-zinc-500'}`}>₹</span>
+                        <input type="number" autoFocus min="0" step="0.01" inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} disabled={isScanning} className={`bg-transparent w-[200px] text-center outline-none transition-colors ${isScanning ? 'text-zinc-500 placeholder:text-zinc-800' : 'text-white placeholder:text-zinc-700'}`} />
+                      </div>
+
+                      <div className="relative w-full max-w-[280px] mx-auto flex items-center justify-center">
+                        <input type="text" placeholder={isScanning ? "Scanning receipt..." : "What was this for?"} value={desc} onChange={(e) => setDesc(e.target.value)} disabled={isScanning} className={`w-full bg-transparent text-center text-xl font-semibold outline-none px-12 transition-colors ${isScanning ? 'text-indigo-400 placeholder:text-indigo-500/50 animate-pulse' : 'text-white placeholder:text-zinc-600'}`} />
+                        
+                        <label className="absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer flex items-center justify-center w-10 h-10 rounded-full bg-zinc-800/50 hover:bg-zinc-700/80 text-zinc-400 hover:text-indigo-400 transition-all border border-white/5 shadow-sm group overflow-hidden">
+                          <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleReceiptUpload} disabled={isScanning} />
+                          {isScanning ? (
+                            <Icons.Loader2 size={18} className="animate-spin text-indigo-400" />
+                          ) : (
+                            <Icons.Camera size={18} className="group-active:scale-90 transition-transform" />
+                          )}
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 block">Category</label>
+                      <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 custom-scrollbar hide-scroll-bar">
+                        {Object.values(CATEGORIES).map((cat) => (
+                          <button key={cat.id} type="button" onClick={() => setCategory(cat.id)} className={`flex flex-col items-center gap-2 flex-shrink-0 w-[72px] p-3 rounded-2xl border transition-all ${category === cat.id ? `bg-zinc-800 border-${cat.color.split('-')[1]}-500 shadow-sm` : 'bg-zinc-900/50 border-transparent opacity-60 hover:opacity-100'}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${category === cat.id ? cat.bg + ' ' + cat.color : 'bg-zinc-800 text-zinc-400'}`}>
+                              <cat.icon size={18} />
+                            </div>
+                            <span className={`text-[10px] font-medium text-center leading-tight ${category === cat.id ? 'text-zinc-200' : 'text-zinc-500'}`}>{cat.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 block">Paid By</label>
+                      <div className="flex flex-wrap gap-2">
+                        {members.map((m) => (
+                          <button key={m.id} type="button" onClick={() => setPaidBy(m.id)} className={`flex items-center gap-2 py-2 px-4 rounded-xl border text-sm font-medium transition-all ${effectivePaidBy === m.id ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300' : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}>
+                            <div className={`w-5 h-5 rounded-full text-[8px] flex items-center justify-center text-white ${m.color}`}>{initials(m.name)}</div>
+                            {m.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 flex justify-between">
+                        <span>Split Between</span>
+                        <span className="text-zinc-400 normal-case font-normal">{participants.length} selected</span>
+                      </label>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {members.map((m) => {
+                          const isSelected = participants.includes(m.id);
+                          return (
+                            <button key={m.id} type="button" onClick={() => toggleParticipant(m.id)} className={`flex items-center gap-2 py-2 px-3 rounded-xl border text-sm font-medium transition-all ${isSelected ? 'bg-zinc-800 border-zinc-600 text-zinc-200' : 'bg-zinc-950 border-zinc-800/50 text-zinc-600'}`}>
+                              <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-zinc-700'}`}>
+                                {isSelected && <Icons.Check size={10} />}
+                              </div>
+                              {m.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="bg-zinc-900 p-1.5 rounded-xl flex gap-1 mb-4">
+                        {['equal', 'exact', 'percentage'].map(type => (
+                          <button key={type} type="button" onClick={() => setSplitType(type)} className={`flex-1 py-2 text-xs font-semibold rounded-lg capitalize transition-all ${splitType === type ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                            {type}
+                          </button>
+                        ))}
+                      </div>
+
+                      {splitType !== "equal" && (
+                        <div className="bg-zinc-900/50 rounded-2xl p-4 border border-white/5 space-y-3">
+                          {participants.map((pid) => (
+                            <div className="flex items-center justify-between gap-4" key={pid}>
+                              <span className="text-sm font-medium text-zinc-300">{memberOf(pid).name}</span>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">{splitType === 'exact' ? '₹' : '%'}</span>
+                                <input type="number" inputMode="decimal" min="0" step="0.01" value={customSplits[pid] || ""} onChange={(e) => handleCustomSplitChange(pid, e.target.value)} placeholder="0" className="w-28 bg-zinc-950 border border-zinc-800 text-white rounded-lg pl-7 pr-3 py-2 text-right text-sm outline-none focus:border-indigo-500" />
+                              </div>
+                            </div>
+                          ))}
+                          
+                          <div className="pt-3 border-t border-zinc-800 flex justify-between items-center text-xs">
+                            <span className="text-zinc-500">Remaining to assign:</span>
+                            <span className={`font-mono font-bold ${Math.abs(customRemaining) < 0.01 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {splitType === 'exact' ? formatINR(customRemaining) : `${customRemaining.toFixed(1)}%`}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {formError && (
+                      <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm p-3 rounded-xl flex items-start gap-2">
+                        <span className="mt-0.5">⚠️</span> {formError}
+                      </div>
+                    )}
+                  </form>
+                </div>
+
+                <div className="p-5 bg-zinc-950 border-t border-white/5">
+                  <button onClick={handleAddExpense} className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-lg shadow-[0_4px_14px_rgba(99,102,241,0.3)] hover:shadow-[0_6px_20px_rgba(99,102,241,0.4)] transition-all active:scale-[0.98]">
+                    Save Expense
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Initialize the React application
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<ExpenseSplitApp />);
+  </script>
+</body>
+</html>
