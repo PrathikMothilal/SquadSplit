@@ -675,48 +675,47 @@
             reader.onloadend = () => {
                 const result = reader.result;
                 if (typeof result === 'string') {
-                    resolve(result.split(',')[1]);
-                } else {
-                    reject(new Error("Failed to read file"));
-                }
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
-
-          const prompt = "Analyze this receipt. Return a JSON object with 'amount' (number, total amount paid), 'description' (string, usually the merchant or store name), and 'category' (string, MUST be exactly one of these: food, travel, stay, groceries, entertainment, other). Be as accurate as possible. Only return the JSON.";
-          
-          const payload = {
-            contents: [{ 
-                role: "user", 
-                parts: [
-                    { text: prompt }, 
-                    { inlineData: { mimeType: file.type || 'image/jpeg', data: base64Data } }
-                ] 
-            }],
-            generationConfig: {
-              responseMimeType: "application/json",
-              // We simplify the schema by removing the strict enum, as models often 
-              // struggle with rigid constraints when processing multimodal data,
-              // leading to 400 Bad Request errors. We handle validation client-side instead.
-              responseSchema: {
-                type: "OBJECT",
-                properties: { 
-                    amount: { type: "NUMBER" }, 
-                    description: { type: "STRING" }, 
-                    category: { type: "STRING" } 
-                },
-                required: ["amount", "description", "category"]
-              }
+                resolve(result.split(',')[1]);
+            } else {
+                reject(new Error("Failed to read file"));
             }
-          };
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-          const apiKey = ""; 
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-          
-          let response;
-          let delay = 1000;
-          let lastError = null;
+      const prompt = "Analyze this receipt. Return a JSON object with 'amount' (number, total amount paid), 'description' (string, usually the merchant or store name), and 'category' (string, MUST be exactly one of these: food, travel, stay, groceries, entertainment, other). Be as accurate as possible. Only return the JSON.";
+      
+      const payload = {
+        contents: [{ 
+            role: "user", 
+            parts: [
+                { text: prompt }, 
+                { inlineData: { mimeType: file.type || 'image/jpeg', data: base64Data } }
+            ] 
+        }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: { 
+                amount: { type: "NUMBER" }, 
+                description: { type: "STRING" }, 
+                category: { type: "STRING" } 
+            },
+            required: ["amount", "description", "category"]
+          }
+        }
+      };
+
+      // IMPORTANT: When hosting on GitHub, you MUST provide your own Gemini API key.
+      // Get a free key from: https://aistudio.google.com/app/apikey
+      const apiKey = ""; // <-- PASTE YOUR GEMINI API KEY HERE INSIDE THE QUOTES
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+      
+      let response;
+      let delay = 1000;
+      let lastError = null;
           
           // Retry loop with exponential backoff for rate limits
           for (let i = 0; i < 3; i++) {
