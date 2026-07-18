@@ -25,6 +25,19 @@
       initializeApp, getAuth, signInAnonymously, signInWithCustomToken,
       getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection
     };
+
+    // Your real Firebase project config (replaces the sandbox-only __firebase_config global)
+    window.FIREBASE_CONFIG = {
+      apiKey: "AIzaSyARrPJZy4qIvFfaNv0tOC187uloJ8flSMY",
+      authDomain: "squadsplit-456d5.firebaseapp.com",
+      projectId: "squadsplit-456d5",
+      storageBucket: "squadsplit-456d5.firebasestorage.app",
+      messagingSenderId: "956229993266",
+      appId: "1:956229993266:web:234f703e2836b9c8aa8d2b",
+      measurementId: "G-ZWHCTQY2P5"
+    };
+    window.FIREBASE_APP_ID = "squadsplit-app";
+
     window.dispatchEvent(new Event('firebase-modules-loaded'));
   </script>
 
@@ -231,8 +244,8 @@
           }
           
           const fb = window.Firebase;
-          const appId = typeof __app_id !== 'undefined' ? __app_id : 'squadsplit-default';
-          const config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+          const appId = window.FIREBASE_APP_ID || 'squadsplit-default';
+          const config = window.FIREBASE_CONFIG || {};
           
           if (!config.apiKey) {
               console.warn("Firebase not configured. Falling back to local memory mode.");
@@ -247,14 +260,8 @@
               const auth = fb.getAuth(app);
               const db = fb.getFirestore(app);
               
-              let user;
-              if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                  const cred = await fb.signInWithCustomToken(auth, __initial_auth_token);
-                  user = cred.user;
-              } else {
-                  const cred = await fb.signInAnonymously(auth);
-                  user = cred.user;
-              }
+              const cred = await fb.signInAnonymously(auth);
+              const user = cred.user;
               
               window.db = db;
               window.uid = user.uid;
