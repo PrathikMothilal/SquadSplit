@@ -16,6 +16,9 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script type="module">
+    import { GoogleGenAI } from "https://esm.run/@google/genai";
+    window.GoogleGenAI = GoogleGenAI;
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import {
@@ -685,87 +688,83 @@
       });
 
       const prompt = "Analyze this receipt. Return a JSON object with 'amount' (number, total amount paid), 'description' (string, usually the merchant or store name), and 'category' (string, MUST be exactly one of these: food, travel, stay, groceries, entertainment, other). Be as accurate as possible. Only return the JSON.";
-      
-      const payload = {
-        contents: [{ 
-            role: "user", 
-            parts: [
-                { text: prompt }, 
-                { inlineData: { mimeType: file.type || 'image/jpeg', data: base64Data } }
-            ] 
-        }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: "OBJECT",
-            properties: { 
-                amount: { type: "NUMBER" }, 
-                description: { type: "STRING" }, 
-                category: { type: "STRING" } 
-            },
-            required: ["amount", "description", "category"]
-          }
-        }
-      };
 
       // IMPORTANT: When hosting on GitHub, you MUST provide your own Gemini API key.
       // Get a free key from: https://aistudio.google.com/app/apikey
       const apiKey = "AQ.Ab8RN6JFEDWMloLPX6SJ-00-weVWZ2EJycooL3sODpbpRzLZwQ"; // <-- PASTE YOUR GEMINI API KEY HERE INSIDE THE QUOTES
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-      
-      let response;
+
+      // NOTE: Newer Gemini API keys (the "AQ." prefix, issued by AI Studio since mid-2026)
+      // are Auth keys, not the old "AIza" Standard keys. Auth keys are currently rejected
+      // (401 ACCESS_TOKEN_TYPE_UNSUPPORTED) when sent as a `?key=` param or header to the
+      // raw generateContent REST endpoint via fetch(). The official @google/genai SDK
+      // (loaded above and exposed as window.GoogleGenAI) handles this auth correctly,
+      // so we use it here instead of a raw fetch call.
+      const ai = new window.GoogleGenAI({ apiKey });
+
+      let result;
       let delay = 1000;
       let lastError = null;
-          
-          // Retry loop with exponential backoff for rate limits
-          for (let i = 0; i < 3; i++) {
-            try {
-              response = await fetch(apiUrl, { 
-                  method: 'POST', 
-                  headers: { 'Content-Type': 'application/json' }, 
-                  body: JSON.stringify(payload) 
-              });
-              
-              if (response.ok) break;
-              
-              // Capture the actual error from the API to debug
-              const errorText = await response.text();
-              console.error(`API Error (Attempt ${i + 1}):`, errorText);
-              lastError = new Error(`API Error: ${response.status}`);
-              
-              if (response.status !== 429) throw lastError;
-            } catch (err) {
-              lastError = err;
-              if (i === 2) throw err;
-              await new Promise(res => setTimeout(res, delay));
-              delay *= 2;
-            }
-          }
 
-          if (!response || !response.ok) {
-              throw lastError || new Error("Failed to reach the AI service.");
-          }
-          
-          const result = await response.json();
-          let jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-          
-          if (jsonText) {
-            // Strip markdown formatting if the model ignored responseMimeType
-            jsonText = jsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
-            const parsed = JSON.parse(jsonText);
-            
-            if (parsed.amount) setAmount(parsed.amount.toString());
-            if (parsed.description) setDesc(parsed.description);
-            
-            // Client-side category validation
-            if (parsed.category && CATEGORIES[parsed.category.toLowerCase()]) {
-                setCategory(parsed.category.toLowerCase());
-            } else {
-                setCategory("other");
+      // Retry loop with exponential backoff for rate limits
+      for (let i = 0; i < 3; i++) {
+        try {
+          result = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{
+              role: "user",
+              parts: [
+                { text: prompt },
+                { inlineData: { mimeType: file.type || 'image/jpeg', data: base64Data } }
+              ]
+            }],
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "OBJECT",
+                properties: {
+                  amount: { type: "NUMBER" },
+                  description: { type: "STRING" },
+                  category: { type: "STRING" }
+                },
+                required: ["amount", "description", "category"]
+              }
             }
-          } else {
-            throw new Error("Could not extract data from the receipt.");
-          }
+          });
+          break;
+        } catch (err) {
+          console.error(`API Error (Attempt ${i + 1}):`, err);
+          lastError = err;
+          // Only retry on rate limit errors; fail fast on anything else (bad key, bad model, etc.)
+          const status = err?.status || err?.code;
+          if (status !== 429 || i === 2) throw err;
+          await new Promise(res => setTimeout(res, delay));
+          delay *= 2;
+        }
+      }
+
+      if (!result) {
+        throw lastError || new Error("Failed to reach the AI service.");
+      }
+
+      let jsonText = result?.text ?? result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (jsonText) {
+        // Strip markdown formatting if the model ignored responseMimeType
+        jsonText = jsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(jsonText);
+
+        if (parsed.amount) setAmount(parsed.amount.toString());
+        if (parsed.description) setDesc(parsed.description);
+
+        // Client-side category validation
+        if (parsed.category && CATEGORIES[parsed.category.toLowerCase()]) {
+            setCategory(parsed.category.toLowerCase());
+        } else {
+            setCategory("other");
+        }
+      } else {
+        throw new Error("Could not extract data from the receipt.");
+      }
         } catch (err) {
           console.error("Scanning error:", err);
           setFormError("Receipt scan failed. Please try again or enter details manually.");
