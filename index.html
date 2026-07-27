@@ -30,9 +30,9 @@
       persistentLocalCache, persistentSingleTabManager
     };
 
-    // Your real Firebase project config (Safe to commit without API key to avoid GitHub deletion)
+    // Your real Firebase project config
     window.FIREBASE_CONFIG = {
-      apiKey: "", // Left blank. Add key here if hosting outside of standard environments
+      apiKey: "AIzaSyARrPJZy4qIvFfaNv0tOC187uloJ8flSMY",
       authDomain: "squadsplit-456d5.firebaseapp.com",
       projectId: "squadsplit-456d5",
       storageBucket: "squadsplit-456d5.firebasestorage.app",
@@ -68,6 +68,8 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+    
+    /* Remove number input spinners */
     input[type=number]::-webkit-inner-spin-button, 
     input[type=number]::-webkit-outer-spin-button { 
       -webkit-appearance: none; 
@@ -98,31 +100,23 @@
       ArrowRight: (p) => <Icon d={["M5 12h14", "m12 5 7 7-7 7"]} {...p} />,
       ArrowLeftRight: (p) => <Icon d={["M8 3 2 9l6 6", "M2 9h20", "m16 21 6-6-6-6", "M22 15H2"]} {...p} />,
       Check: (p) => <Icon d={["M20 6 9 17l-5-5"]} {...p} />,
+      IndianRupee: (p) => <Icon d={["M6 3h12", "M6 8h12", "m6 13 8.5-8", "M6 13h3c4 0 4-5 0-5"]} {...p} />,
       UserPlus: (p) => <Icon d={["M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2", "M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M20 8v6", "M23 11h-6"]} {...p} />,
       Wallet: (p) => <Icon d={["M21 12V7H5a2 2 0 0 1 0-4h14v4", "M3 5v14a2 2 0 0 0 2 2h16v-5", "M18 12a2 2 0 0 0 0 4h4v-4Z"]} {...p} />,
       Users: (p) => <Icon d={["M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2", "M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M18 8a5 5 0 0 1 5 5v2"]} {...p} />,
       Receipt: (p) => <Icon d={["M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z", "M16 8h-6", "M16 12h-8", "M16 16h-8"]} {...p} />,
       LayoutGrid: (p) => <Icon d={["M3 3h7v7H3z", "M14 3h7v7h-7z", "M14 14h7v7h-7z", "M3 14h7v7H3z"]} {...p} />,
       Utensils: (p) => <Icon d={["M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2", "M7 2v20", "M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3v-7"]} {...p} />,
-      Wine: (p) => <Icon d={["M8 22h8", "M12 15v7", "M12 15a7.5 7.5 0 0 0 7.5-7.5V2H4.5v5.5A7.5 7.5 0 0 0 12 15Z", "M4.5 7h15"]} {...p} />,
-      Coffee: (p) => <Icon d={["M17 8h1a4 4 0 1 1 0 8h-1", "M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z", "M6 2v2", "M10 2v2", "M14 2v2"]} {...p} />,
       Plane: (p) => <Icon d={["M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.6L3 8l6 5-3 3-3-1-2 2 4 4 2-2-1-3 3-3 5 6 1.2-.7c.4-.2.7-.6.6-1.1Z"]} {...p} />,
       Home: (p) => <Icon d={["M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", "M9 22V12h6v10"]} {...p} />,
-      Car: (p) => <Icon d={["M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2", "m7 17 5-5", "m12 12 5 5"]} {...p} />,
-      Train: (p) => <Icon d={["M4 15V6a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v9", "M4 15h16", "M3 15l2 6h14l2-6", "M12 2v13", "M8 15v6", "M16 15v6"]} {...p} />,
       ShoppingCart: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className}><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>,
       Ticket: (p) => <Icon d={["M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z", "M13 5v2", "M13 17v2", "M13 11v2"]} {...p} />,
-      Music: (p) => <Icon d={["M9 18V5l12-2v13", "M9 9l12-2", "M6 15a3 3 0 1 0 3 3v-3Z", "M18 13a3 3 0 1 0 3 3v-3Z"]} {...p} />,
-      Gift: (p) => <Icon d={["M20 12v10H4V12", "M2 7h20v5H2z", "M12 22V7", "M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z", "M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"]} {...p} />,
-      Monitor: (p) => <Icon d={["M2 3h20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z", "M12 17v4", "M8 21h8"]} {...p} />,
-      Smartphone: (p) => <Icon d={["M5 4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4z", "M12 18h.01"]} {...p} />,
-      Heart: (p) => <Icon d={["M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"]} {...p} />,
-      Star: (p) => <Icon d={["M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"]} {...p} />,
-      Zap: (p) => <Icon d={["M13 2L3 14h9l-1 8 10-12h-9l1-8z"]} {...p} />,
       MoreHorizontal: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className}><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>,
-      Settings: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-      Edit: (p) => <Icon d={["M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7", "M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"]} {...p} />,
-      PlusCircle: (p) => <Icon d={["M12 8v8", "M8 12h8", "M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10z"]} {...p} />,
+      Coffee: (p) => <Icon d={["M17 8h1a4 4 0 1 1 0 8h-1", "M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z", "M6 2v2", "M10 2v2", "M14 2v2"]} {...p} />,
+      GlassWater: (p) => <Icon d={["M15.2 22H8.8a2 2 0 0 1-2-1.8L5 3h14l-1.8 17.2a2 2 0 0 1-2 1.8Z", "M6 12a5 5 0 0 1 6 0 5 5 0 0 0 6 0"]} {...p} />,
+      ShoppingBag: (p) => <Icon d={["M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z", "M3 6h18", "M16 10a4 4 0 0 1-8 0"]} {...p} />,
+      Zap: (p) => <Icon d={["M13 2 3 14h9l-1 8 10-12h-9l1-8Z"]} {...p} />,
+      Tag: (p) => <Icon d={["M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42Z", "M7.5 7.5h.01"]} {...p} />,
       ChevronLeft: (p) => <Icon d={["m15 18-6-6 6-6"]} {...p} />,
       ChevronDown: (p) => <Icon d={["m6 9 6 6 6-6"]} {...p} />,
       ChevronRight: (p) => <Icon d={["m9 18 6-6-6-6"]} {...p} />,
@@ -130,38 +124,61 @@
       Camera: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>,
       Loader2: (p) => <Icon d={["M21 12a9 9 0 1 1-6.219-8.56"]} {...p} />,
       Folder: (p) => <Icon d={["M4 20h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-8.5L9.5 4H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1Z"]} {...p} />,
+      Settings: (p) => <Icon d={["M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"]} {...p} />,
     };
 
     const AVATAR_COLORS = ["bg-indigo-500", "bg-emerald-500", "bg-rose-500", "bg-amber-500", "bg-cyan-500", "bg-fuchsia-500", "bg-lime-500"];
-    
-    const CATEGORY_COLORS = [
-      { id: 'red', color: 'text-red-400', bg: 'bg-red-400/10', hex: '#f87171' },
-      { id: 'orange', color: 'text-orange-400', bg: 'bg-orange-400/10', hex: '#fb923c' },
-      { id: 'amber', color: 'text-amber-400', bg: 'bg-amber-400/10', hex: '#fbbf24' },
-      { id: 'emerald', color: 'text-emerald-400', bg: 'bg-emerald-400/10', hex: '#34d399' },
-      { id: 'cyan', color: 'text-cyan-400', bg: 'bg-cyan-400/10', hex: '#22d3ee' },
-      { id: 'blue', color: 'text-blue-400', bg: 'bg-blue-400/10', hex: '#60a5fa' },
-      { id: 'indigo', color: 'text-indigo-400', bg: 'bg-indigo-400/10', hex: '#818cf8' },
-      { id: 'fuchsia', color: 'text-fuchsia-400', bg: 'bg-fuchsia-400/10', hex: '#e879f9' },
-      { id: 'rose', color: 'text-rose-400', bg: 'bg-rose-400/10', hex: '#fb7185' },
-      { id: 'zinc', color: 'text-zinc-400', bg: 'bg-zinc-400/10', hex: '#a1a1aa' }
-    ];
 
-    const AVAILABLE_ICONS = [
-      'Utensils', 'Wine', 'Coffee', 'Plane', 'Car', 'Train', 'Home', 'ShoppingCart', 
-      'Ticket', 'Music', 'Gift', 'Monitor', 'Smartphone', 'Heart', 'Star', 'Zap', 'MoreHorizontal'
-    ];
-
+    // Built-in categories. Any user-added custom categories (see CategoriesManager in Settings)
+    // are merged on top of these at runtime and persisted separately in localStorage.
     const DEFAULT_CATEGORIES = {
-      food: { id: "food", label: "Food", icon: "Utensils", color: "text-amber-400", bg: "bg-amber-400/10", hex: "#fbbf24" },
-      drinks: { id: "drinks", label: "Drinks", icon: "Wine", color: "text-rose-400", bg: "bg-rose-400/10", hex: "#fb7185" },
-      tea_coffee: { id: "tea_coffee", label: "Tea/Coffee", icon: "Coffee", color: "text-orange-400", bg: "bg-orange-400/10", hex: "#fb923c" },
-      travel: { id: "travel", label: "Travel", icon: "Plane", color: "text-blue-400", bg: "bg-blue-400/10", hex: "#60a5fa" },
-      stay: { id: "stay", label: "Accommodation", icon: "Home", color: "text-indigo-400", bg: "bg-indigo-400/10", hex: "#818cf8" },
-      groceries: { id: "groceries", label: "Groceries", icon: "ShoppingCart", color: "text-emerald-400", bg: "bg-emerald-400/10", hex: "#34d399" },
-      entertainment: { id: "entertainment", label: "Entertainment", icon: "Ticket", color: "text-fuchsia-400", bg: "bg-fuchsia-400/10", hex: "#e879f9" },
-      other: { id: "other", label: "Other", icon: "MoreHorizontal", color: "text-zinc-400", bg: "bg-zinc-400/10", hex: "#a1a1aa" },
+      food: { id: "food", label: "Food", icon: Icons.Utensils, color: "text-amber-400", bg: "bg-amber-400/10", hex: "#fbbf24" },
+      drinks: { id: "drinks", label: "Drinks", icon: Icons.GlassWater, color: "text-sky-400", bg: "bg-sky-400/10", hex: "#38bdf8" },
+      coffee: { id: "coffee", label: "Tea & Coffee", icon: Icons.Coffee, color: "text-orange-400", bg: "bg-orange-400/10", hex: "#fb923c" },
+      travel: { id: "travel", label: "Travel", icon: Icons.Plane, color: "text-blue-400", bg: "bg-blue-400/10", hex: "#60a5fa" },
+      stay: { id: "stay", label: "Accommodation", icon: Icons.Home, color: "text-indigo-400", bg: "bg-indigo-400/10", hex: "#818cf8" },
+      groceries: { id: "groceries", label: "Groceries", icon: Icons.ShoppingCart, color: "text-emerald-400", bg: "bg-emerald-400/10", hex: "#34d399" },
+      shopping: { id: "shopping", label: "Shopping", icon: Icons.ShoppingBag, color: "text-pink-400", bg: "bg-pink-400/10", hex: "#f472b6" },
+      entertainment: { id: "entertainment", label: "Entertainment", icon: Icons.Ticket, color: "text-fuchsia-400", bg: "bg-fuchsia-400/10", hex: "#e879f9" },
+      bills: { id: "bills", label: "Bills & Utilities", icon: Icons.Zap, color: "text-yellow-400", bg: "bg-yellow-400/10", hex: "#facc15" },
+      other: { id: "other", label: "Other", icon: Icons.MoreHorizontal, color: "text-zinc-400", bg: "bg-zinc-400/10", hex: "#a1a1aa" },
     };
+
+    // Options offered to the user when they create a custom category in Settings.
+    const CATEGORY_ICON_CHOICES = [
+      { name: "Tag", icon: Icons.Tag },
+      { name: "Utensils", icon: Icons.Utensils },
+      { name: "GlassWater", icon: Icons.GlassWater },
+      { name: "Coffee", icon: Icons.Coffee },
+      { name: "Plane", icon: Icons.Plane },
+      { name: "Home", icon: Icons.Home },
+      { name: "ShoppingCart", icon: Icons.ShoppingCart },
+      { name: "ShoppingBag", icon: Icons.ShoppingBag },
+      { name: "Ticket", icon: Icons.Ticket },
+      { name: "Zap", icon: Icons.Zap },
+      { name: "Wallet", icon: Icons.Wallet },
+      { name: "Receipt", icon: Icons.Receipt },
+      { name: "PieChart", icon: Icons.PieChart },
+      { name: "Folder", icon: Icons.Folder },
+      { name: "MoreHorizontal", icon: Icons.MoreHorizontal },
+    ];
+
+    const CATEGORY_COLOR_CHOICES = [
+      { color: "text-amber-400", bg: "bg-amber-400/10", hex: "#fbbf24" },
+      { color: "text-sky-400", bg: "bg-sky-400/10", hex: "#38bdf8" },
+      { color: "text-orange-400", bg: "bg-orange-400/10", hex: "#fb923c" },
+      { color: "text-blue-400", bg: "bg-blue-400/10", hex: "#60a5fa" },
+      { color: "text-indigo-400", bg: "bg-indigo-400/10", hex: "#818cf8" },
+      { color: "text-emerald-400", bg: "bg-emerald-400/10", hex: "#34d399" },
+      { color: "text-pink-400", bg: "bg-pink-400/10", hex: "#f472b6" },
+      { color: "text-fuchsia-400", bg: "bg-fuchsia-400/10", hex: "#e879f9" },
+      { color: "text-yellow-400", bg: "bg-yellow-400/10", hex: "#facc15" },
+      { color: "text-rose-400", bg: "bg-rose-400/10", hex: "#fb7185" },
+      { color: "text-lime-400", bg: "bg-lime-400/10", hex: "#a3e635" },
+      { color: "text-cyan-400", bg: "bg-cyan-400/10", hex: "#22d3ee" },
+      { color: "text-violet-400", bg: "bg-violet-400/10", hex: "#a78bfa" },
+      { color: "text-zinc-400", bg: "bg-zinc-400/10", hex: "#a1a1aa" },
+    ];
 
     const seedMembers = [
       { id: "m1", name: "Rahul", color: AVATAR_COLORS[0] },
@@ -290,8 +307,76 @@
       // Setup state for Data Loading
       const [isDBReady, setIsDBReady] = useState(false);
 
-      // Global Settings State
-      const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+      // API Key State
+      const [apiKey, setApiKey] = useState(() => localStorage.getItem("squadsplit_gemini_key") || "");
+      const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+      const [tempApiKey, setTempApiKey] = useState("");
+
+      useEffect(() => {
+        localStorage.setItem("squadsplit_gemini_key", apiKey);
+      }, [apiKey]);
+
+      // Custom Categories State (persisted locally; stored as { [id]: { id, label, iconName, color, bg, hex, custom:true } })
+      const [customCategories, setCustomCategories] = useState(() => {
+        try {
+          return JSON.parse(localStorage.getItem("squadsplit_custom_categories")) || {};
+        } catch {
+          return {};
+        }
+      });
+
+      useEffect(() => {
+        localStorage.setItem("squadsplit_custom_categories", JSON.stringify(customCategories));
+      }, [customCategories]);
+
+      // Merge defaults with any user-created custom categories. This shadows the
+      // module-level DEFAULT_CATEGORIES for the rest of this component so every
+      // existing "CATEGORIES[...]" lookup below picks up custom categories automatically.
+      const CATEGORIES = useMemo(() => {
+        const merged = { ...DEFAULT_CATEGORIES };
+        Object.values(customCategories).forEach((c) => {
+          merged[c.id] = {
+            ...c,
+            icon: (CATEGORY_ICON_CHOICES.find((i) => i.name === c.iconName) || CATEGORY_ICON_CHOICES[0]).icon,
+          };
+        });
+        return merged;
+      }, [customCategories]);
+
+      function addCustomCategory({ label, iconName, color, bg, hex }) {
+        const trimmed = label.trim();
+        if (!trimmed) return;
+        const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+        let id = `custom_${slug || "category"}`;
+        // Avoid clobbering an existing category id (default or custom)
+        if (CATEGORIES[id]) id = `${id}_${Date.now().toString(36)}`;
+        setCustomCategories((prev) => ({
+          ...prev,
+          [id]: { id, label: trimmed, iconName, color, bg, hex, custom: true },
+        }));
+      }
+
+      function removeCustomCategory(id) {
+        setCustomCategories((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      }
+
+      // Form state for the "Add Category" UI in Settings
+      const [newCatLabel, setNewCatLabel] = useState("");
+      const [newCatIconName, setNewCatIconName] = useState(CATEGORY_ICON_CHOICES[0].name);
+      const [newCatColorIdx, setNewCatColorIdx] = useState(0);
+
+      function handleAddCategorySubmit() {
+        if (!newCatLabel.trim()) return;
+        const chosenColor = CATEGORY_COLOR_CHOICES[newCatColorIdx];
+        addCustomCategory({ label: newCatLabel, iconName: newCatIconName, ...chosenColor });
+        setNewCatLabel("");
+        setNewCatIconName(CATEGORY_ICON_CHOICES[0].name);
+        setNewCatColorIdx(0);
+      }
 
       // Group & Top-Level State
       const [groups, setGroups] = useState([]); 
@@ -312,6 +397,7 @@
           const config = window.FIREBASE_CONFIG || {};
           
           if (!config.apiKey) {
+              console.warn("Firebase not configured. Falling back to local memory mode.");
               setGroups(seedGroups);
               setActiveGroupId(seedGroups[0].id);
               setIsDBReady(true);
@@ -336,6 +422,7 @@
               window.isFirebaseActive = true;
               
               const groupsRef = fb.collection(db, 'artifacts', appId, 'users', user.uid, 'groups');
+              
               fb.onSnapshot(groupsRef, (snapshot) => {
                  const fetched = [];
                  snapshot.forEach(doc => fetched.push(doc.data()));
@@ -353,14 +440,11 @@
                      });
                      setIsDBReady(true);
                  }
-              });
-
-              // Load user categories
-              const catRef = fb.doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'categories');
-              fb.onSnapshot(catRef, (docSnap) => {
-                  if (docSnap.exists()) {
-                      setCategories(docSnap.data());
-                  }
+              }, (err) => {
+                 console.error("Firestore sync error:", err);
+                 setGroups(seedGroups);
+                 setActiveGroupId(seedGroups[0].id);
+                 setIsDBReady(true);
               });
               
           } catch(err) {
@@ -376,6 +460,7 @@
 
       async function updateGroupInDB(groupId, updaterFn) {
         if (!isDBReady) return;
+        
         setGroups(prev => {
           const targetGroup = prev.find(g => g.id === groupId);
           if (!targetGroup) return prev;
@@ -389,18 +474,9 @@
                 newGroupData
              ).catch(console.error);
           }
+          
           return prev.map(g => g.id === groupId ? newGroupData : g);
         });
-      }
-
-      function updateCategoriesInDB(newCats) {
-        setCategories(newCats);
-        if (window.isFirebaseActive) {
-            window.Firebase.setDoc(
-                window.Firebase.doc(window.db, 'artifacts', window.aid, 'users', window.uid, 'settings', 'categories'),
-                newCats
-            ).catch(console.error);
-        }
       }
 
       // Safe access defaults
@@ -410,21 +486,14 @@
       const settlements = activeGroup.settlements;
 
       // UI View State
-      const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, ledger, groups, settle, settings
+      const [activeTab, setActiveTab] = useState("dashboard");
       const [expandedSettleMember, setExpandedSettleMember] = useState(null);
       const [isSettleModeOpen, setIsSettleModeOpen] = useState(false);
       const [analyticsFilter, setAnalyticsFilter] = useState("all"); 
-      
-      // Form/Modal States
       const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
       const [editingExpenseId, setEditingExpenseId] = useState(null); 
-      
-      // Settings Modal States
-      const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-      const [editingCategory, setEditingCategory] = useState(null);
-      const [catForm, setCatForm] = useState({ label: '', icon: 'MoreHorizontal', colorId: 'zinc' });
 
-      // Expense Form State
+      // Form State
       const [desc, setDesc] = useState("");
       const [amount, setAmount] = useState("");
       const [category, setCategory] = useState("other");
@@ -434,6 +503,8 @@
       const [customSplits, setCustomSplits] = useState({});
       const [formError, setFormError] = useState("");
       const [isScanning, setIsScanning] = useState(false);
+      const [receiptImage, setReceiptImage] = useState(null); // compressed data URI of the scanned/attached bill
+      const [receiptViewerUrl, setReceiptViewerUrl] = useState(null); // set to open the full-screen receipt viewer
       
       const [dialog, setDialog] = useState({ isOpen: false, title: "", message: "", onConfirm: null, confirmText: "Confirm", isDestructive: true });
 
@@ -489,34 +560,37 @@
 
       // Analytics Logic
       const filteredExpenses = useMemo(() => {
-        if (analyticsFilter === "all") return expenses.map(e => ({...e, share: e.amount}));
+        if (analyticsFilter === "all") {
+          return expenses.map(e => ({...e, share: e.amount}));
+        }
         return expenses.map(e => {
           let share = 0;
           if (e.participants.includes(analyticsFilter)) {
-             if (e.splitType === "equal") share = e.amount / e.participants.length;
-             else share = e.customSplits[analyticsFilter] || 0;
+             if (e.splitType === "equal") {
+               share = e.amount / e.participants.length;
+             } else {
+               share = e.customSplits[analyticsFilter] || 0;
+             }
           }
           return { ...e, share };
         }).filter(e => e.share > 0);
       }, [expenses, analyticsFilter]);
 
-      const filteredTotalSpent = useMemo(() => filteredExpenses.reduce((sum, e) => sum + e.share, 0), [filteredExpenses]);
+      const filteredTotalSpent = useMemo(() => 
+        filteredExpenses.reduce((sum, e) => sum + e.share, 0)
+      , [filteredExpenses]);
 
       const filteredCategoryBreakdown = useMemo(() => {
         const breakdown = {};
-        Object.keys(categories).forEach(k => breakdown[k] = 0);
+        Object.keys(CATEGORIES).forEach(k => breakdown[k] = 0);
         filteredExpenses.forEach(e => {
-          const catId = categories[e.category] ? e.category : "other";
-          breakdown[catId] = (breakdown[catId] || 0) + e.share;
+          breakdown[e.category] = (breakdown[e.category] || 0) + e.share;
         });
         return Object.entries(breakdown)
-          .map(([catId, amt]) => {
-             const c = categories[catId] || categories["other"];
-             return { ...c, amount: amt, percent: filteredTotalSpent ? (amt / filteredTotalSpent) * 100 : 0 };
-          })
+          .map(([cat, amt]) => ({ ...CATEGORIES[cat], amount: amt, percent: filteredTotalSpent ? (amt / filteredTotalSpent) * 100 : 0 }))
           .filter(c => c.amount > 0)
           .sort((a, b) => b.amount - a.amount);
-      }, [filteredExpenses, filteredTotalSpent, categories]);
+      }, [filteredExpenses, filteredTotalSpent]);
       
       const pieConicStops = useMemo(() => {
         let currentAngle = 0;
@@ -573,6 +647,7 @@
       function requestDeleteGroup(id) {
         const target = groups.find((g) => g.id === id);
         if (!target) return;
+        
         setDialog({
           isOpen: true,
           title: "Delete Trip?",
@@ -583,12 +658,14 @@
           isDestructive: true,
           onConfirm: async () => {
             const remaining = groups.filter((g) => g.id !== id);
+            
             if (remaining.length === 0) {
               const newId = "g" + Date.now();
               const newGroup = { id: newId, name: "New Trip", members: [], expenses: [], settlements: [], createdAt: Date.now() };
               setGroups([newGroup]);
               setActiveGroupId(newId);
               setExpandedGroupId(newId);
+              
               if (window.isFirebaseActive) {
                  window.Firebase.setDoc(
                     window.Firebase.doc(window.db, 'artifacts', window.aid, 'users', window.uid, 'groups', newId),
@@ -601,6 +678,7 @@
               if (expandedGroupId === id) setExpandedGroupId(null);
             }
             setDialog({ isOpen: false });
+            
             if (window.isFirebaseActive) {
                window.Firebase.deleteDoc(
                   window.Firebase.doc(window.db, 'artifacts', window.aid, 'users', window.uid, 'groups', id)
@@ -614,9 +692,11 @@
         const trimmed = (name || "").trim();
         if (!trimmed) return;
         const id = "m" + Date.now();
+        
         updateGroupInDB(groupId, (g) => ({
            members: [...g.members, { id, name: trimmed, color: AVATAR_COLORS[g.members.length % AVATAR_COLORS.length] }]
         }));
+        
         if (groupId === activeGroupId) setParticipants((p) => [...p, id]);
         setMemberInputByGroup((prev) => ({ ...prev, [groupId]: "" }));
       }
@@ -649,6 +729,7 @@
             updateGroupInDB(groupId, (g) => ({
                members: g.members.filter((m) => m.id !== memberId)
             }));
+            
             if (groupId === activeGroupId) setParticipants((p) => p.filter((pid) => pid !== memberId));
             setDialog({ isOpen: false });
           }
@@ -669,6 +750,24 @@
       }
 
       function openExpenseFormForNew() {
+        resetExpenseForm();
+        setIsAddExpenseOpen(true);
+      }
+
+      function openExpenseFormForEdit(expense) {
+        setEditingExpenseId(expense.id);
+        setDesc(expense.description);
+        setAmount(expense.amount.toString());
+        setCategory(expense.category);
+        setPaidBy(expense.paidBy);
+        setParticipants(expense.participants);
+        setSplitType(expense.splitType); 
+        setCustomSplits(expense.customSplits || {});
+        setReceiptImage(expense.receiptImage || null);
+        setIsAddExpenseOpen(true);
+      }
+
+      function resetExpenseForm() {
         setEditingExpenseId(null);
         setDesc(""); 
         setAmount(""); 
@@ -677,19 +776,51 @@
         setCategory("other");
         setParticipants(activeGroup.members.map((m) => m.id));
         setPaidBy(activeGroup.members[0]?.id || "");
-        setIsAddExpenseOpen(true);
+        setReceiptImage(null);
       }
 
-      function openExpenseFormForEdit(expense) {
-        setEditingExpenseId(expense.id);
-        setDesc(expense.description);
-        setAmount(expense.amount.toString());
-        setCategory(categories[expense.category] ? expense.category : "other");
-        setPaidBy(expense.paidBy);
-        setParticipants(expense.participants);
-        setSplitType(expense.splitType); 
-        setCustomSplits(expense.customSplits || {});
-        setIsAddExpenseOpen(true);
+      function handleCloseModal() {
+        setIsAddExpenseOpen(false);
+        resetExpenseForm();
+      }
+
+      function openSettings() {
+        setTempApiKey(apiKey);
+        setIsSettingsOpen(true);
+      }
+
+      // Shrinks an image file down to a small JPEG data URI so it can be safely
+      // stored alongside the expense (Firestore documents are capped at ~1MB,
+      // and a group document holds every expense in it, so receipts must stay tiny).
+      function compressImageForStorage(file, maxDim = 1000, quality = 0.6) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+              let { width, height } = img;
+              if (width > maxDim || height > maxDim) {
+                if (width > height) {
+                  height = Math.round(height * (maxDim / width));
+                  width = maxDim;
+                } else {
+                  width = Math.round(width * (maxDim / height));
+                  height = maxDim;
+                }
+              }
+              const canvas = document.createElement('canvas');
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = () => reject(new Error("Could not read the image."));
+            img.src = reader.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
       }
 
       async function handleReceiptUpload(e) {
@@ -700,71 +831,119 @@
         setIsScanning(true);
 
         try {
+          // Robustly read the file as Base64
           const base64Data = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => {
                 const result = reader.result;
-                if (typeof result === 'string') resolve(result.split(',')[1]);
-                else reject(new Error("Failed to read file"));
+                if (typeof result === 'string') {
+                  resolve(result.split(',')[1]); // strip off the data uri prefix
+                } else {
+                  reject(new Error("Failed to read file"));
+                }
             };
             reader.onerror = reject;
             reader.readAsDataURL(file);
           });
 
-          // Fetch API setup using environment/injected key (safe for GitHub)
-          const apiKey = ""; 
-          const validCategoriesList = Object.values(categories).map(c => c.label).join(", ");
-          const prompt = `Analyze this receipt. Return a JSON object with 'amount' (number, total amount paid), 'description' (string, usually the merchant or store name), and 'category' (string, MUST be exactly one of these: ${validCategoriesList}). Be as accurate as possible. Only return the JSON.`;
-          
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+          // Save a compressed copy of the bill so it can be viewed later from the ledger.
+          // This happens independently of the AI scan below, so the image is kept
+          // even if scanning fails or no API key is configured.
+          try {
+            const compressed = await compressImageForStorage(file);
+            setReceiptImage(compressed);
+          } catch (imgErr) {
+            console.error("Could not store receipt image:", imgErr);
+          }
 
-          let resultData = null;
+          const categoryIdList = Object.keys(CATEGORIES).join(", ");
+          const prompt = `Analyze this receipt. Return a JSON object with 'amount' (number, total amount paid), 'description' (string, usually the merchant or store name), and 'category' (string, MUST be exactly one of these: ${categoryIdList}). Be as accurate as possible. Only return the JSON.`;
+
+          // Use the user-provided API key from settings. 
+          // An empty string still allows the collaborative environment to supply it dynamically at runtime if hosted here.
+          const effectiveApiKey = apiKey || ""; 
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${effectiveApiKey}`;
+
+          const payload = {
+            contents: [{
+              role: "user",
+              parts: [
+                { text: prompt },
+                {
+                  inlineData: {
+                    mimeType: file.type || 'image/jpeg',
+                    data: base64Data
+                  }
+                }
+              ]
+            }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "OBJECT",
+                properties: {
+                  amount: { type: "NUMBER" },
+                  description: { type: "STRING" },
+                  category: { type: "STRING" }
+                },
+                required: ["amount", "description", "category"]
+              }
+            }
+          };
+
+          let resultData;
           let delay = 1000;
+          let lastError = null;
 
           // Retry loop with exponential backoff for rate limits
           for (let i = 0; i < 3; i++) {
             try {
-              const res = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  contents: [{
-                    role: "user",
-                    parts: [
-                      { text: prompt },
-                      { inlineData: { mimeType: file.type || 'image/jpeg', data: base64Data } }
-                    ]
-                  }],
-                  generationConfig: { responseMimeType: "application/json" }
-                })
+              const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
               });
-              
-              if (!res.ok) {
-                 if (res.status === 429) throw new Error("Rate limit");
-                 throw new Error(`API Error: ${res.status}`);
+
+              if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                const status = response.status;
+                // If the user forgot to supply their own key on github, give a friendly message
+                if (status === 400 && errData?.error?.message?.includes('API key')) {
+                   throw new Error("Missing or invalid Gemini API Key! Please click the Gear icon in the top right to set it.");
+                }
+                throw new Error(errData?.error?.message || `HTTP ${status}`);
               }
-              
-              resultData = await res.json();
+
+              resultData = await response.json();
               break;
             } catch (err) {
-              if (i === 2) throw err;
-              await new Promise(r => setTimeout(r, delay));
+              console.error(`API Error (Attempt ${i + 1}):`, err);
+              lastError = err;
+              // Fail fast on non-rate-limit errors
+              if (!err.message.includes("429") || i === 2) throw err;
+              await new Promise(res => setTimeout(res, delay));
               delay *= 2;
             }
           }
 
-          let jsonText = resultData?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!resultData) {
+            throw lastError || new Error("Failed to reach the AI service.");
+          }
+
+          const candidate = resultData.candidates?.[0];
+          let jsonText = candidate?.content?.parts?.[0]?.text;
 
           if (jsonText) {
+            // Strip markdown formatting just in case
             jsonText = jsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
             const parsed = JSON.parse(jsonText);
 
             if (parsed.amount) setAmount(parsed.amount.toString());
             if (parsed.description) setDesc(parsed.description);
 
-            if (parsed.category) {
-                const matchedCategory = Object.values(categories).find(c => c.label.toLowerCase() === parsed.category.toLowerCase());
-                setCategory(matchedCategory ? matchedCategory.id : "other");
+            // Client-side category validation
+            if (parsed.category && CATEGORIES[parsed.category.toLowerCase()]) {
+                setCategory(parsed.category.toLowerCase());
             } else {
                 setCategory("other");
             }
@@ -773,9 +952,10 @@
           }
         } catch (err) {
           console.error("Scanning error:", err);
-          setFormError("Receipt scan failed. Please try again or enter details manually.");
+          setFormError(err.message || "Receipt scan failed. Please try again or enter details manually.");
         } finally {
           setIsScanning(false);
+          // Reset file input so the same file can be selected again if needed
           if (e.target) e.target.value = '';
         }
       }
@@ -788,7 +968,7 @@
         if (!amt || amt <= 0) return setFormError("Please enter a valid amount.");
         if (participants.length === 0) return setFormError("Select at least one person.");
 
-        const finalDesc = desc.trim() || categories[category]?.label || "Expense";
+        const finalDesc = desc.trim() || CATEGORIES[category].label;
         let finalCustomSplits = { ...customSplits };
 
         if (splitType === "exact") {
@@ -797,7 +977,10 @@
         } else if (splitType === "percentage") {
           const percentSum = participants.reduce((s, p) => s + (finalCustomSplits[p] || 0), 0);
           if (Math.abs(percentSum - 100) > 0.5) return setFormError(`Percentages must add up to 100%. Current sum: ${percentSum}%.`);
-          participants.forEach(p => { finalCustomSplits[p] = (finalCustomSplits[p] / 100) * amt; });
+          
+          participants.forEach(p => {
+            finalCustomSplits[p] = (finalCustomSplits[p] / 100) * amt;
+          });
         }
 
         let expenseDate = Date.now();
@@ -816,68 +999,41 @@
           splitType: splitType === "percentage" ? "exact" : splitType, 
           customSplits: finalCustomSplits,
           date: expenseDate,
+          receiptImage: receiptImage || null,
         };
 
         updateGroupInDB(activeGroupId, (g) => {
-            if (editingExpenseId) return { expenses: g.expenses.map(exp => exp.id === editingExpenseId ? newExpense : exp) };
-            return { expenses: [newExpense, ...g.expenses] };
+            if (editingExpenseId) {
+                return { expenses: g.expenses.map(exp => exp.id === editingExpenseId ? newExpense : exp) };
+            } else {
+                return { expenses: [newExpense, ...g.expenses] };
+            }
         });
         
-        setIsAddExpenseOpen(false);
+        handleCloseModal();
       }
 
-      // --- Settings Logic ---
-      function openCategoryModal(cat = null) {
-        setFormError("");
-        if (cat) {
-           const colorObj = CATEGORY_COLORS.find(c => c.hex === cat.hex) || CATEGORY_COLORS[0];
-           setEditingCategory(cat.id);
-           setCatForm({ label: cat.label, icon: cat.icon, colorId: colorObj.id });
-        } else {
-           setEditingCategory(null);
-           setCatForm({ label: '', icon: AVAILABLE_ICONS[0], colorId: CATEGORY_COLORS[0].id });
-        }
-        setIsCategoryModalOpen(true);
+      function handleSettle(s) {
+        updateGroupInDB(activeGroupId, (g) => ({
+           settlements: [...g.settlements, { id: "s" + Date.now(), from: s.from, to: s.to, amount: s.amount, date: Date.now() }]
+        }));
       }
 
-      function saveCategoryDetails() {
-         const label = catForm.label.trim();
-         if (!label) return setFormError("Category name cannot be empty.");
-         
-         const colorObj = CATEGORY_COLORS.find(c => c.id === catForm.colorId);
-         const idToSave = editingCategory || ("cat_" + Date.now());
-         
-         const newCats = { ...categories };
-         newCats[idToSave] = {
-            id: idToSave,
-            label,
-            icon: catForm.icon,
-            color: colorObj.color,
-            bg: colorObj.bg,
-            hex: colorObj.hex
-         };
-         
-         updateCategoriesInDB(newCats);
-         setIsCategoryModalOpen(false);
+      function deleteExpense(id) {
+        updateGroupInDB(activeGroupId, (g) => ({
+           expenses: g.expenses.filter((e) => e.id !== id)
+        }));
       }
 
-      function deleteCategory() {
-         if (!editingCategory || editingCategory === "other") return;
-         setDialog({
-            isOpen: true,
-            title: "Delete Category?",
-            message: `Any existing expenses using "${categories[editingCategory]?.label}" will be moved to "Other".`,
-            confirmText: "Delete",
-            isDestructive: true,
-            onConfirm: () => {
-               const newCats = { ...categories };
-               delete newCats[editingCategory];
-               updateCategoriesInDB(newCats);
-               setDialog({ isOpen: false });
-               setIsCategoryModalOpen(false);
-            }
-         });
+      function deleteSettlement(id) {
+        updateGroupInDB(activeGroupId, (g) => ({
+           settlements: g.settlements.filter((s) => s.id !== id)
+        }));
       }
+
+      const customRemaining = splitType === "exact" 
+        ? (parseFloat(amount) || 0) - participants.reduce((s, p) => s + (customSplits[p] || 0), 0)
+        : 100 - participants.reduce((s, p) => s + (customSplits[p] || 0), 0);
 
       if (!isDBReady) {
         return (
@@ -911,10 +1067,7 @@
                     </p>
                   </div>
                 </button>
-                <div className="flex items-center gap-4">
-                  <button onClick={() => setActiveTab("settings")} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${activeTab === "settings" ? "bg-indigo-500/20 text-indigo-400" : "bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-700"}`}>
-                    <Icons.Settings size={16} />
-                  </button>
+                <div className="flex items-center gap-3">
                   <div className="flex -space-x-2">
                     {members.slice(0, 3).map(m => (
                       <div key={m.id} className={`w-8 h-8 rounded-full border-2 border-[#0A0A0B] flex items-center justify-center text-[10px] font-bold text-white ${m.color}`}>
@@ -927,6 +1080,9 @@
                       </div>
                     )}
                   </div>
+                  <button onClick={openSettings} className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors" title="Settings">
+                    <Icons.Settings size={14} />
+                  </button>
                 </div>
               </div>
               
@@ -945,6 +1101,7 @@
                       <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
                         <Icons.PieChart size={16} className="text-indigo-400"/> Analytics
                       </h3>
+                      
                       <div className="relative">
                         <select 
                           value={analyticsFilter} 
@@ -963,12 +1120,14 @@
                     {filteredTotalSpent > 0 ? (
                       <>
                         <div className="flex justify-center mb-8 relative items-center h-52">
-                          <div className="w-52 h-52 rounded-full absolute transition-all duration-500 ease-out"
+                          <div 
+                            className="w-52 h-52 rounded-full absolute transition-all duration-500 ease-out"
                             style={{ 
                                 background: `conic-gradient(${pieConicStops})`,
                                 WebkitMaskImage: 'radial-gradient(circle, transparent 62%, black 63%)',
                                 maskImage: 'radial-gradient(circle, transparent 62%, black 63%)'
-                            }}></div>
+                            }}
+                          ></div>
                           <div className="z-10 flex flex-col items-center justify-center">
                              <span className="text-[10px] text-zinc-500 font-semibold tracking-wider uppercase mb-0.5">
                                {analyticsFilter === "all" ? "Total" : "My Share"}
@@ -978,23 +1137,20 @@
                         </div>
 
                         <div className="space-y-3">
-                          {filteredCategoryBreakdown.map(cat => {
-                            const CatIcon = Icons[cat.icon] || Icons.MoreHorizontal;
-                            return (
-                              <div key={cat.id} className="flex items-center justify-between p-2 -mx-2 hover:bg-white/5 rounded-xl transition-colors">
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-10 h-10 rounded-full ${cat.bg} ${cat.color} flex items-center justify-center`}>
-                                    <CatIcon size={16} />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-medium text-zinc-200">{cat.label}</p>
-                                    <p className="text-[11px] text-zinc-500 font-medium">{cat.percent.toFixed(0)}% of total</p>
-                                  </div>
+                          {filteredCategoryBreakdown.map(cat => (
+                            <div key={cat.id} className="flex items-center justify-between p-2 -mx-2 hover:bg-white/5 rounded-xl transition-colors">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-full ${cat.bg} ${cat.color} flex items-center justify-center`}>
+                                  <cat.icon size={16} />
                                 </div>
-                                <span className="text-sm font-bold text-zinc-100">{formatINR(cat.amount)}</span>
+                                <div>
+                                  <p className="text-sm font-medium text-zinc-200">{cat.label}</p>
+                                  <p className="text-[11px] text-zinc-500 font-medium">{cat.percent.toFixed(0)}% of total</p>
+                                </div>
                               </div>
-                            );
-                          })}
+                              <span className="text-sm font-bold text-zinc-100">{formatINR(cat.amount)}</span>
+                            </div>
+                          ))}
                         </div>
                       </>
                     ) : (
@@ -1029,51 +1185,61 @@
                               {dayTotal > 0 && <span className="text-xs font-semibold text-zinc-600">{formatINR(dayTotal)}</span>}
                             </div>
                             <div className="space-y-3">
-                              {group.items.map((item) => {
-                                if (item.type === "settlement") {
-                                  return (
-                                    <div className="flex items-center gap-3 p-3 bg-zinc-900/40 hover:bg-zinc-800/60 border border-white/5 rounded-2xl relative overflow-hidden group transition-colors cursor-pointer" key={item.id}>
-                                      <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 flex-shrink-0">
-                                        <Icons.Check size={18} />
-                                      </div>
-                                      <div className="flex-1 min-w-0 pr-8">
-                                        <p className="text-sm font-medium text-zinc-200 truncate">
-                                          {memberOf(item.from).name} paid {memberOf(item.to).name}
-                                        </p>
-                                        <p className="text-xs text-zinc-500">{formatTime(item.date)}</p>
-                                      </div>
-                                      <div className="flex flex-col items-end">
-                                        <span className="text-sm font-bold text-emerald-400">{formatINR(item.amount)}</span>
-                                      </div>
-                                      <button onClick={(e) => { e.stopPropagation(); deleteSettlement(item.id); }} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-rose-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                                        <Icons.Trash2 size={14} />
-                                      </button>
+                              {group.items.map((item) =>
+                                item.type === "settlement" ? (
+                                  <div className="flex items-center gap-3 p-3 bg-zinc-900/40 hover:bg-zinc-800/60 border border-white/5 rounded-2xl relative overflow-hidden group transition-colors cursor-pointer" key={item.id}>
+                                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 flex-shrink-0">
+                                      <Icons.Check size={18} />
                                     </div>
-                                  );
-                                } else {
-                                  const cat = categories[item.category] || categories['other'];
-                                  const CatIcon = Icons[cat.icon] || Icons.MoreHorizontal;
-                                  return (
-                                    <div className="flex items-center gap-3 p-3 bg-zinc-900/60 hover:bg-zinc-800/80 cursor-pointer border border-white/5 rounded-2xl relative overflow-hidden group transition-colors" key={item.id} onClick={() => openExpenseFormForEdit(item)}>
-                                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${cat.bg} ${cat.color}`}>
-                                        <CatIcon size={18} />
-                                      </div>
-                                      <div className="flex-1 min-w-0 pr-8">
-                                        <p className="text-sm font-semibold text-zinc-100 truncate">{item.description}</p>
-                                        <p className="text-xs text-zinc-500 truncate">
-                                          {memberOf(item.paidBy).name} paid · {formatTime(item.date)}
-                                        </p>
-                                      </div>
-                                      <div className="flex flex-col items-end">
-                                        <span className="text-sm font-bold text-white">{formatINR(item.amount)}</span>
-                                      </div>
-                                      <button onClick={(e) => { e.stopPropagation(); deleteExpense(item.id); }} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-rose-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                                        <Icons.Trash2 size={14} />
-                                      </button>
+                                    <div className="flex-1 min-w-0 pr-8">
+                                      <p className="text-sm font-medium text-zinc-200 truncate">
+                                        {memberOf(item.from).name} paid {memberOf(item.to).name}
+                                      </p>
+                                      <p className="text-xs text-zinc-500">{formatTime(item.date)}</p>
                                     </div>
-                                  );
-                                }
-                              })}
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-sm font-bold text-emerald-400">{formatINR(item.amount)}</span>
+                                    </div>
+                                    <button onClick={(e) => { e.stopPropagation(); deleteSettlement(item.id); }} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-rose-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                                      <Icons.Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div 
+                                    className="flex items-center gap-3 p-3 bg-zinc-900/60 hover:bg-zinc-800/80 cursor-pointer border border-white/5 rounded-2xl relative overflow-hidden group transition-colors" 
+                                    key={item.id}
+                                    onClick={() => openExpenseFormForEdit(item)}
+                                  >
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${CATEGORIES[item.category]?.bg || 'bg-zinc-800'} ${CATEGORIES[item.category]?.color || 'text-zinc-400'}`}>
+                                      {React.createElement(CATEGORIES[item.category]?.icon || Icons.MoreHorizontal, { size: 18 })}
+                                    </div>
+                                    <div className="flex-1 min-w-0 pr-8">
+                                      <p className="text-sm font-semibold text-zinc-100 truncate flex items-center gap-1.5">
+                                        {item.description}
+                                        {item.receiptImage && <Icons.Receipt size={12} className="text-indigo-400/70 flex-shrink-0" />}
+                                      </p>
+                                      <p className="text-xs text-zinc-500 truncate">
+                                        {memberOf(item.paidBy).name} paid · {formatTime(item.date)}
+                                      </p>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-sm font-bold text-white">{formatINR(item.amount)}</span>
+                                    </div>
+                                    {item.receiptImage && (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setReceiptViewerUrl(item.receiptImage); }}
+                                        title="View bill"
+                                        className="absolute right-14 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg overflow-hidden border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                      >
+                                        <img src={item.receiptImage} alt="Bill" className="w-full h-full object-cover" />
+                                      </button>
+                                    )}
+                                    <button onClick={(e) => { e.stopPropagation(); deleteExpense(item.id); }} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-rose-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                                      <Icons.Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                )
+                              )}
                             </div>
                           </div>
                         );
@@ -1091,7 +1257,13 @@
                     </h2>
 
                     <div className="relative">
-                      <button type="button" onClick={() => !settleLocked && setIsSettleModeOpen((v) => !v)} disabled={settleLocked} className={`flex items-center gap-1.5 py-1.5 pl-3 pr-2 rounded-lg border text-xs font-semibold transition-colors ${settleLocked ? 'bg-zinc-900/50 border-zinc-800/50 text-zinc-600 cursor-not-allowed' : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800'}`}>
+                      <button
+                        type="button"
+                        onClick={() => !settleLocked && setIsSettleModeOpen((v) => !v)}
+                        disabled={settleLocked}
+                        title={settleLocked ? "Mode is locked because a payment has already been recorded" : ""}
+                        className={`flex items-center gap-1.5 py-1.5 pl-3 pr-2 rounded-lg border text-xs font-semibold transition-colors ${settleLocked ? 'bg-zinc-900/50 border-zinc-800/50 text-zinc-600 cursor-not-allowed' : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800'}`}
+                      >
                         {settleMode === "smart" ? "Smart" : "Regular"}
                         <Icons.ChevronDown size={14} className={`transition-transform ${isSettleModeOpen ? 'rotate-180' : ''}`} />
                       </button>
@@ -1100,20 +1272,28 @@
                         <>
                           <div className="fixed inset-0 z-10" onClick={() => setIsSettleModeOpen(false)}></div>
                           <div className="absolute right-0 top-full mt-2 w-56 bg-[#171719] border border-zinc-800 rounded-xl shadow-2xl z-20 overflow-hidden">
-                            <button type="button" onClick={() => { changeSettleMode("smart"); setIsSettleModeOpen(false); }} className={`w-full text-left px-4 py-3 hover:bg-zinc-800 transition-colors ${settleMode === "smart" ? "bg-zinc-800/60" : ""}`}>
+                            <button
+                              type="button"
+                              onClick={() => { changeSettleMode("smart"); setIsSettleModeOpen(false); }}
+                              className={`w-full text-left px-4 py-3 hover:bg-zinc-800 transition-colors ${settleMode === "smart" ? "bg-zinc-800/60" : ""}`}
+                            >
                               <div className="flex items-center justify-between">
                                 <span className="text-sm font-semibold text-zinc-100">Smart</span>
                                 {settleMode === "smart" && <Icons.Check size={14} className="text-indigo-400" />}
                               </div>
-                              <p className="text-[11px] text-zinc-500 mt-0.5">Fewest possible payments.</p>
+                              <p className="text-[11px] text-zinc-500 mt-0.5">Fewest possible payments, balances simplified across the group.</p>
                             </button>
                             <div className="h-px bg-zinc-800"></div>
-                            <button type="button" onClick={() => { changeSettleMode("regular"); setIsSettleModeOpen(false); }} className={`w-full text-left px-4 py-3 hover:bg-zinc-800 transition-colors ${settleMode === "regular" ? "bg-zinc-800/60" : ""}`}>
+                            <button
+                              type="button"
+                              onClick={() => { changeSettleMode("regular"); setIsSettleModeOpen(false); }}
+                              className={`w-full text-left px-4 py-3 hover:bg-zinc-800 transition-colors ${settleMode === "regular" ? "bg-zinc-800/60" : ""}`}
+                            >
                               <div className="flex items-center justify-between">
                                 <span className="text-sm font-semibold text-zinc-100">Regular</span>
                                 {settleMode === "regular" && <Icons.Check size={14} className="text-indigo-400" />}
                               </div>
-                              <p className="text-[11px] text-zinc-500 mt-0.5">Direct, unsimplified payments.</p>
+                              <p className="text-[11px] text-zinc-500 mt-0.5">Direct, unsimplified payments — exactly who owes whom.</p>
                             </button>
                           </div>
                         </>
@@ -1125,9 +1305,21 @@
                     {suggestions.length === 0 
                       ? (settlements.length > 0 ? "All balances are settled." : "Nothing to settle.")
                       : settleMode === "smart"
-                        ? `Simplified to the fewest payments possible — just ${suggestions.length} left.`
-                        : `Direct payments between members — ${suggestions.length} to settle up.`}
+                        ? `Simplified to the fewest payments possible — just ${suggestions.length} transaction${suggestions.length !== 1 ? "s" : ""} left.`
+                        : `Direct payments between members — ${suggestions.length} transaction${suggestions.length !== 1 ? "s" : ""} to settle up.`}
                   </p>
+
+                  {suggestions.length === 0 && expenses.length > 0 && (
+                    <div className="flex items-center gap-3 p-4 mb-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 flex-shrink-0">
+                        <Icons.Check size={20} />
+                      </div>
+                      <div>
+                        <h3 className="text-emerald-400 font-bold text-sm">All Settled Up!</h3>
+                        <p className="text-emerald-500/80 text-xs">All balances have been cleared.</p>
+                      </div>
+                    </div>
+                  )}
                   
                   {expenses.length === 0 ? (
                     <div className="text-center py-12 px-4 bg-zinc-900/30 rounded-2xl border border-dashed border-zinc-800">
@@ -1150,7 +1342,7 @@
                         const netBalance = balances[member.id] || 0;
 
                         return (
-                          <div key={member.id} className={`bg-[#0F0F11] rounded-2xl border transition-all duration-300 overflow-hidden ${isExpanded ? 'border-indigo-500/30' : 'border-white/5'}`}>
+                          <div key={member.id} className={`bg-[#0F0F11] rounded-2xl border transition-all duration-300 overflow-hidden ${isExpanded ? 'border-indigo-500/30 shadow-[0_0_20px_rgba(99,102,241,0.05)]' : 'border-white/5'}`}>
                             <button onClick={() => canExpand && setExpandedSettleMember(isExpanded ? null : member.id)} disabled={!canExpand} className={`w-full p-4 flex items-center justify-between transition-colors ${canExpand ? 'hover:bg-white/[0.02] cursor-pointer' : 'cursor-default'}`}>
                               <div className="flex items-center gap-4">
                                 <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-inner ${member.color}`}>
@@ -1183,8 +1375,11 @@
                                 <div className="overflow-hidden">
                                   <div className="p-4 pt-0 bg-zinc-950/50">
                                     <div className="space-y-6 mt-2">
+                                      
+                                      {/* Pending Payments */}
                                       {owes.length > 0 && (
                                         <div className="space-y-3">
+                                          {paid.length > 0 && <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2 px-1">Pending</div>}
                                           {owes.map((s, idx) => (
                                             <div key={`owe-${idx}`} className="bg-[#171719] p-4 rounded-xl border border-white/5">
                                               <div className="flex items-center justify-between mb-4">
@@ -1203,13 +1398,44 @@
                                                   <span className="text-[11px] font-medium text-zinc-400">{memberOf(s.to).name}</span>
                                                 </div>
                                               </div>
-                                              <button onClick={(e) => { e.stopPropagation(); updateGroupInDB(activeGroupId, (g) => ({ settlements: [...g.settlements, { id: "s" + Date.now(), from: s.from, to: s.to, amount: s.amount, date: Date.now() }] })); }} className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-[#050505] text-sm font-bold rounded-lg transition-colors">
+                                              <button onClick={(e) => { e.stopPropagation(); handleSettle(s); }} className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-[#050505] text-sm font-bold rounded-lg transition-colors">
                                                 Record Payment
                                               </button>
                                             </div>
                                           ))}
                                         </div>
                                       )}
+
+                                      {/* Completed Payments */}
+                                      {paid.length > 0 && (
+                                        <div className="space-y-3">
+                                          {owes.length > 0 && <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2 px-1 pt-2 border-t border-white/5">Completed</div>}
+                                          {paid.map((s) => (
+                                            <div key={s.id} className="bg-[#171719]/50 p-4 rounded-xl border border-emerald-500/10">
+                                              <div className="flex items-center justify-between mb-4 opacity-70">
+                                                <div className="flex flex-col items-center gap-2">
+                                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white ${member.color}`}>{initials(member.name)}</div>
+                                                  <span className="text-[11px] font-medium text-zinc-400">{member.name}</span>
+                                                </div>
+                                                <div className="flex flex-col items-center flex-1 px-3">
+                                                  <span className="text-zinc-300 font-bold text-[17px] mb-1">{formatINR(s.amount)}</span>
+                                                  <div className="w-full h-px bg-zinc-700 relative flex justify-end items-center">
+                                                    <Icons.ChevronRight size={14} className="text-zinc-600 absolute -right-1"/>
+                                                  </div>
+                                                </div>
+                                                <div className="flex flex-col items-center gap-2">
+                                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white ${memberOf(s.to).color}`}>{initials(memberOf(s.to).name)}</div>
+                                                  <span className="text-[11px] font-medium text-zinc-400">{memberOf(s.to).name}</span>
+                                                </div>
+                                              </div>
+                                              <div className="w-full py-2.5 bg-emerald-500/10 text-emerald-400 flex items-center justify-center gap-2 text-sm font-bold rounded-lg cursor-default border border-emerald-500/20">
+                                                <Icons.Check size={16} /> Completed
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
                                     </div>
                                   </div>
                                 </div>
@@ -1229,12 +1455,12 @@
                     <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
                       <Icons.Folder size={20} className="text-indigo-400" /> Trips
                     </h2>
-                    <p className="text-xs text-zinc-500">One trip is active at a time.</p>
+                    <p className="text-xs text-zinc-500">One trip is active at a time — everything you add lives inside it until you switch.</p>
                   </div>
 
                   <form onSubmit={createGroup} className="flex items-center gap-2">
                     <input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} placeholder="New trip name..." className="flex-1 bg-zinc-900/50 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 transition-colors" />
-                    <button type="submit" className="w-11 h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-center hover:opacity-90 transition-all flex-shrink-0">
+                    <button type="submit" className="w-11 h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-center hover:opacity-90 transition-all flex-shrink-0 shadow-[0_4px_14px_rgba(99,102,241,0.3)]">
                       <Icons.Plus size={18} />
                     </button>
                   </form>
@@ -1245,7 +1471,7 @@
                       const isExpanded = expandedGroupId === g.id;
                       const groupTotal = g.expenses.reduce((s, e) => s + e.amount, 0);
                       return (
-                        <div key={g.id} className={`bg-[#0F0F11] rounded-2xl border transition-all duration-300 overflow-hidden ${isActive ? "border-indigo-500/40" : "border-white/5"}`}>
+                        <div key={g.id} className={`bg-[#0F0F11] rounded-2xl border transition-all duration-300 overflow-hidden ${isActive ? "border-indigo-500/40 shadow-[0_0_20px_rgba(99,102,241,0.08)]" : "border-white/5"}`}>
                           <button onClick={() => setExpandedGroupId(isExpanded ? null : g.id)} className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
                             <div className="flex items-center gap-3 min-w-0">
                               <div className={`w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center ${isActive ? "bg-indigo-500/15 text-indigo-400" : "bg-zinc-800 text-zinc-500"}`}>
@@ -1254,9 +1480,11 @@
                               <div className="text-left min-w-0">
                                 <div className="flex items-center gap-2">
                                   <span className="text-zinc-100 font-bold text-sm truncate">{g.name}</span>
-                                  {isActive && <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0">Active</span>}
+                                  {isActive && (
+                                    <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0">Active</span>
+                                  )}
                                 </div>
-                                <div className="text-xs text-zinc-500 mt-0.5 truncate">{g.members.length} members · {formatINR(groupTotal)} spent</div>
+                                <div className="text-xs text-zinc-500 mt-0.5 truncate">{g.members.length} member{g.members.length !== 1 ? "s" : ""} · {formatINR(groupTotal)} spent</div>
                               </div>
                             </div>
                             <Icons.ChevronDown size={18} className={`text-zinc-500 flex-shrink-0 transition-transform duration-300 ${isExpanded ? "rotate-180 text-indigo-400" : ""}`} />
@@ -1268,8 +1496,13 @@
                                 <div className="pt-3 space-y-4">
                                   <div>
                                     <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2 block">Members</label>
+                                    {g.members.length === 0 && (
+                                      <p className="text-xs text-zinc-500 mb-2 italic">No members yet. Add people below to start splitting!</p>
+                                    )}
                                     <div className="flex flex-wrap gap-2">
-                                      {g.members.map((m) => (
+                                      {g.members.map((m) => {
+                                        const used = g.expenses.some((e) => e.paidBy === m.id || e.participants.includes(m.id)) || g.settlements.some((s) => s.from === m.id || s.to === m.id);
+                                        return (
                                           <div key={m.id} className="flex items-center gap-2 py-1.5 pl-1.5 pr-2 rounded-full bg-zinc-900 border border-zinc-800">
                                             <div className={`w-6 h-6 rounded-full text-[9px] flex items-center justify-center text-white flex-shrink-0 ${m.color}`}>{initials(m.name)}</div>
                                             <span className="text-xs font-medium text-zinc-300">{m.name}</span>
@@ -1277,20 +1510,25 @@
                                               <Icons.X size={12} />
                                             </button>
                                           </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   </div>
+
                                   <form onSubmit={(e) => { e.preventDefault(); addMemberToGroup(g.id, memberInputByGroup[g.id]); }} className="flex items-center gap-2">
                                     <input value={memberInputByGroup[g.id] || ""} onChange={(e) => setMemberInputByGroup((prev) => ({ ...prev, [g.id]: e.target.value }))} placeholder="Add a member..." className="flex-1 bg-zinc-950 border border-zinc-800 text-white rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-500 transition-colors" />
-                                    <button type="submit" className="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center flex-shrink-0"><Icons.UserPlus size={15} /></button>
+                                    <button type="submit" className="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center hover:bg-indigo-600 transition-colors flex-shrink-0">
+                                      <Icons.UserPlus size={15} />
+                                    </button>
                                   </form>
+
                                   <div className="flex items-center gap-2 pt-1">
                                     {!isActive && (
-                                      <button onClick={() => setActiveGroupId(g.id)} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold transition-all">
+                                      <button onClick={() => setActiveGroupId(g.id)} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold transition-all active:scale-[0.98]">
                                         Set as Active
                                       </button>
                                     )}
-                                    <button onClick={() => requestDeleteGroup(g.id)} className={`${isActive ? "flex-1" : ""} py-2.5 px-4 rounded-xl bg-zinc-900 border border-white/5 text-rose-400 text-xs font-bold flex items-center justify-center gap-1.5`}>
+                                    <button onClick={() => requestDeleteGroup(g.id)} className={`${isActive ? "flex-1" : ""} py-2.5 px-4 rounded-xl bg-zinc-900 border border-white/5 text-rose-400 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-rose-500/10 transition-colors`}>
                                       <Icons.Trash2 size={13} /> Delete Trip
                                     </button>
                                   </div>
@@ -1304,46 +1542,6 @@
                   </div>
                 </div>
               )}
-
-              {activeTab === "settings" && (
-                <div className="p-5 space-y-6">
-                  <div>
-                    <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-                      <Icons.Settings size={20} className="text-indigo-400" /> Settings
-                    </h2>
-                    <p className="text-xs text-zinc-500">Manage categories and application preferences.</p>
-                  </div>
-
-                  <div className="bg-[#0F0F11] border border-white/5 rounded-3xl p-5">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-bold text-zinc-100">Expense Categories</h3>
-                        <button onClick={() => openCategoryModal()} className="flex items-center gap-1 text-xs font-bold text-indigo-400 hover:text-indigo-300">
-                           <Icons.Plus size={14} /> New
-                        </button>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      {Object.values(categories).map(cat => {
-                        const CatIcon = Icons[cat.icon] || Icons.MoreHorizontal;
-                        return (
-                          <div key={cat.id} className="flex items-center justify-between p-3 bg-zinc-900/50 hover:bg-zinc-800/60 border border-white/5 rounded-2xl transition-colors">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${cat.bg} ${cat.color}`}>
-                                <CatIcon size={18} />
-                              </div>
-                              <span className="text-sm font-semibold text-zinc-200">{cat.label}</span>
-                            </div>
-                            <button onClick={() => openCategoryModal(cat)} className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-800 text-zinc-400 hover:text-white transition-colors">
-                              <Icons.Edit size={14} />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-
             </main>
 
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[380px] bg-zinc-900/90 backdrop-blur-xl border border-white/10 rounded-3xl px-2 py-2 flex items-center justify-between shadow-2xl z-40">
@@ -1355,6 +1553,9 @@
               <button onClick={() => setActiveTab("ledger")} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-2xl transition-all relative ${activeTab === "ledger" ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"}`}>
                 <Icons.Receipt size={22} className={activeTab === "ledger" ? "text-indigo-400" : ""} />
                 <span className="text-[10px] font-medium">Ledger</span>
+                {activity.length > 0 && activeTab !== "ledger" && (
+                  <span className="absolute top-1 right-[25%] w-2 h-2 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.8)]"></span>
+                )}
               </button>
 
               <div className="relative -top-6 px-2">
@@ -1379,11 +1580,10 @@
               </button>
             </div>
 
-            {/* EXPENSE MODAL */}
             {isAddExpenseOpen && (
               <div className="absolute inset-0 bg-[#0A0A0B] z-50 flex flex-col transition-all duration-300">
                 <div className="flex items-center justify-between px-5 pt-12 sm:pt-8 pb-4 bg-zinc-950 border-b border-white/5">
-                  <button onClick={() => setIsAddExpenseOpen(false)} className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-zinc-400 hover:bg-zinc-900 transition-colors">
+                  <button onClick={handleCloseModal} className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-zinc-400 hover:bg-zinc-900 transition-colors">
                     <Icons.ChevronLeft size={24} />
                   </button>
                   <h2 className="text-lg font-bold text-white">
@@ -1394,6 +1594,7 @@
 
                 <div className="flex-1 overflow-y-auto p-5 custom-scrollbar pb-24">
                   <form onSubmit={handleSaveExpense} className="space-y-6">
+                    
                     <div className="bg-zinc-900/50 p-5 rounded-3xl border border-white/5 flex flex-col items-center text-center">
                       <div className="flex items-center justify-center text-5xl font-bold text-white mb-6 transition-all">
                         <span className={`mr-1 text-4xl ${isScanning ? 'text-zinc-700' : 'text-zinc-500'}`}>₹</span>
@@ -1403,31 +1604,60 @@
                       <div className="relative w-full max-w-[280px] mx-auto flex items-center justify-center">
                         <input type="text" placeholder={isScanning ? "Scanning receipt..." : "What was this for?"} value={desc} onChange={(e) => setDesc(e.target.value)} disabled={isScanning} className={`w-full bg-transparent text-center text-xl font-semibold outline-none px-12 transition-colors ${isScanning ? 'text-indigo-400 placeholder:text-indigo-500/50 animate-pulse' : 'text-white placeholder:text-zinc-600'}`} />
                         
-                        <label className="absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer flex items-center justify-center w-10 h-10 rounded-full bg-zinc-800/50 hover:bg-zinc-700/80 text-zinc-400 hover:text-indigo-400 transition-all border border-white/5 shadow-sm group overflow-hidden">
-                          <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleReceiptUpload} disabled={isScanning} />
-                          {isScanning ? (
-                            <Icons.Loader2 size={18} className="animate-spin text-indigo-400" />
-                          ) : (
-                            <Icons.Camera size={18} className="group-active:scale-90 transition-transform" />
-                          )}
-                        </label>
+                        {receiptImage ? (
+                          <button
+                            type="button"
+                            onClick={() => setReceiptViewerUrl(receiptImage)}
+                            title="View attached bill"
+                            className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full overflow-hidden border border-white/10 shadow-sm group"
+                          >
+                            <img src={receiptImage} alt="Attached bill" className="w-full h-full object-cover" />
+                          </button>
+                        ) : (
+                          <label className="absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer flex items-center justify-center w-10 h-10 rounded-full bg-zinc-800/50 hover:bg-zinc-700/80 text-zinc-400 hover:text-indigo-400 transition-all border border-white/5 shadow-sm group overflow-hidden">
+                            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleReceiptUpload} disabled={isScanning} />
+                            {isScanning ? (
+                              <Icons.Loader2 size={18} className="animate-spin text-indigo-400" />
+                            ) : (
+                              <Icons.Camera size={18} className="group-active:scale-90 transition-transform" />
+                            )}
+                          </label>
+                        )}
                       </div>
+
+                      {receiptImage && (
+                        <div className="flex items-center gap-2 mt-3">
+                          <button
+                            type="button"
+                            onClick={() => setReceiptViewerUrl(receiptImage)}
+                            className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                          >
+                            <Icons.Receipt size={13} /> View bill
+                          </button>
+                          <span className="text-zinc-700">·</span>
+                          <label className="text-xs font-semibold text-zinc-500 hover:text-zinc-300 cursor-pointer">
+                            Replace
+                            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleReceiptUpload} disabled={isScanning} />
+                          </label>
+                          <span className="text-zinc-700">·</span>
+                          <button type="button" onClick={() => setReceiptImage(null)} className="text-xs font-semibold text-rose-400/80 hover:text-rose-400">
+                            Remove
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <div>
                       <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 block">Category</label>
                       <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 custom-scrollbar hide-scroll-bar">
-                        {Object.values(categories).map((cat) => {
-                          const CatIcon = Icons[cat.icon] || Icons.MoreHorizontal;
-                          return (
-                            <button key={cat.id} type="button" onClick={() => setCategory(cat.id)} className={`flex flex-col items-center gap-2 flex-shrink-0 w-[72px] p-3 rounded-2xl border transition-all ${category === cat.id ? `bg-zinc-800 border-${cat.color.split('-')[1]}-500 shadow-sm` : 'bg-zinc-900/50 border-transparent opacity-60 hover:opacity-100'}`}>
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${category === cat.id ? cat.bg + ' ' + cat.color : 'bg-zinc-800 text-zinc-400'}`}>
-                                <CatIcon size={18} />
-                              </div>
-                              <span className={`text-[10px] font-medium text-center leading-tight ${category === cat.id ? 'text-zinc-200' : 'text-zinc-500'}`}>{cat.label}</span>
-                            </button>
-                          );
-                        })}
+                        {Object.values(CATEGORIES).map((cat) => (
+                          <button key={cat.id} type="button" onClick={() => setCategory(cat.id)} className={`flex flex-col items-center gap-2 flex-shrink-0 w-[72px] p-3 rounded-2xl border transition-all ${category === cat.id ? `bg-zinc-800 border-${cat.color.split('-')[1]}-500 shadow-sm` : 'bg-zinc-900/50 border-transparent opacity-60 hover:opacity-100'}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${category === cat.id ? cat.bg + ' ' + cat.color : 'bg-zinc-800 text-zinc-400'}`}>
+                              <cat.icon size={18} />
+                            </div>
+                            <span className={`text-[10px] font-medium text-center leading-tight ${category === cat.id ? 'text-zinc-200' : 'text-zinc-500'}`}>{cat.label}</span>
+                          </button>
+                        ))}
                       </div>
                     </div>
 
@@ -1481,6 +1711,13 @@
                               </div>
                             </div>
                           ))}
+                          
+                          <div className="pt-3 border-t border-zinc-800 flex justify-between items-center text-xs">
+                            <span className="text-zinc-500">Remaining to assign:</span>
+                            <span className={`font-mono font-bold ${Math.abs(customRemaining) < 0.01 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {splitType === 'exact' ? formatINR(customRemaining) : `${customRemaining.toFixed(1)}%`}
+                            </span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1500,83 +1737,23 @@
                 </div>
               </div>
             )}
-            
-            {/* CATEGORY SETTINGS MODAL */}
-            {isCategoryModalOpen && (
-              <div className="absolute inset-0 bg-[#0A0A0B] z-50 flex flex-col transition-all duration-300">
-                 <div className="flex items-center justify-between px-5 pt-12 sm:pt-8 pb-4 bg-zinc-950 border-b border-white/5">
-                  <button onClick={() => setIsCategoryModalOpen(false)} className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-zinc-400 hover:bg-zinc-900 transition-colors">
-                    <Icons.ChevronLeft size={24} />
+
+            {receiptViewerUrl && (
+              <div className="absolute inset-0 bg-black/90 z-[110] flex flex-col" onClick={() => setReceiptViewerUrl(null)}>
+                <div className="flex items-center justify-between px-5 pt-12 sm:pt-8 pb-4">
+                  <span className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
+                    <Icons.Receipt size={16} className="text-indigo-400" /> Bill
+                  </span>
+                  <button onClick={() => setReceiptViewerUrl(null)} className="w-10 h-10 rounded-full flex items-center justify-center text-zinc-300 hover:bg-white/10 transition-colors">
+                    <Icons.X size={22} />
                   </button>
-                  <h2 className="text-lg font-bold text-white">
-                    {editingCategory ? "Edit Category" : "New Category"}
-                  </h2>
-                  <div className="w-10"></div> 
                 </div>
-
-                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar pb-24 space-y-8">
-                   
-                   <div className="flex justify-center">
-                     <div className={`w-24 h-24 rounded-full flex items-center justify-center ${CATEGORY_COLORS.find(c=>c.id===catForm.colorId)?.bg} ${CATEGORY_COLORS.find(c=>c.id===catForm.colorId)?.color}`}>
-                        {(() => {
-                           const IconComp = Icons[catForm.icon] || Icons.MoreHorizontal;
-                           return <IconComp size={42} />;
-                        })()}
-                     </div>
-                   </div>
-
-                   <div>
-                      <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2 block">Name</label>
-                      <input type="text" value={catForm.label} onChange={e => setCatForm({...catForm, label: e.target.value})} placeholder="e.g. Sushi" className="w-full bg-zinc-900/80 border border-zinc-800 text-white font-semibold rounded-xl px-4 py-3 outline-none focus:border-indigo-500" />
-                   </div>
-
-                   <div>
-                      <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 block">Color</label>
-                      <div className="flex flex-wrap gap-3">
-                         {CATEGORY_COLORS.map(color => (
-                            <button key={color.id} onClick={() => setCatForm({...catForm, colorId: color.id})} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${catForm.colorId === color.id ? 'ring-2 ring-offset-2 ring-offset-[#0A0A0B] ring-indigo-500' : 'hover:scale-110'}`} style={{ backgroundColor: color.hex }}>
-                               {catForm.colorId === color.id && <Icons.Check size={18} className="text-black/60" />}
-                            </button>
-                         ))}
-                      </div>
-                   </div>
-
-                   <div>
-                      <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 block">Icon</label>
-                      <div className="grid grid-cols-5 gap-3">
-                         {AVAILABLE_ICONS.map(iconName => {
-                            const IconComp = Icons[iconName];
-                            const isSelected = catForm.icon === iconName;
-                            return (
-                               <button key={iconName} onClick={() => setCatForm({...catForm, icon: iconName})} className={`aspect-square rounded-xl flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-500 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
-                                  <IconComp size={20} />
-                               </button>
-                            );
-                         })}
-                      </div>
-                   </div>
-
-                   {formError && (
-                      <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm p-3 rounded-xl flex items-start gap-2">
-                        <span className="mt-0.5">⚠️</span> {formError}
-                      </div>
-                   )}
-                </div>
-
-                <div className="p-5 bg-zinc-950 border-t border-white/5 space-y-3">
-                  <button onClick={saveCategoryDetails} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold shadow-lg hover:shadow-xl transition-all">
-                    Save Category
-                  </button>
-                  {editingCategory && editingCategory !== "other" && (
-                    <button onClick={deleteCategory} className="w-full py-3.5 rounded-xl bg-transparent text-rose-400 font-bold hover:bg-rose-500/10 transition-colors">
-                      Delete Category
-                    </button>
-                  )}
+                <div className="flex-1 overflow-auto flex items-center justify-center p-4 custom-scrollbar">
+                  <img src={receiptViewerUrl} alt="Scanned bill" className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
                 </div>
               </div>
             )}
-
-            {/* GLOBAL DIALOG */}
+            
             {dialog.isOpen && (
               <div className="absolute inset-0 z-[100] flex items-center justify-center p-4">
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDialog({ isOpen: false })}></div>
@@ -1597,11 +1774,131 @@
               </div>
             )}
 
+            {isSettingsOpen && (
+              <div className="absolute inset-0 bg-[#0A0A0B] z-[60] flex flex-col transition-all duration-300">
+                <div className="flex items-center justify-between px-5 pt-12 sm:pt-8 pb-4 bg-zinc-950 border-b border-white/5">
+                  <button onClick={() => setIsSettingsOpen(false)} className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-zinc-400 hover:bg-zinc-900 transition-colors">
+                    <Icons.ChevronLeft size={24} />
+                  </button>
+                  <h2 className="text-lg font-bold text-white">Settings</h2>
+                  <div className="w-10"></div> 
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+                  <div className="bg-zinc-900/50 p-5 rounded-3xl border border-white/5 space-y-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-zinc-200 mb-1">Gemini API Key</h3>
+                      <p className="text-xs text-zinc-500 leading-relaxed mb-4">
+                        To use the AI receipt scanner when hosting this app yourself, you need a free Gemini API key. 
+                        Your key is saved locally in your browser.
+                      </p>
+                      
+                      <input 
+                        type="password" 
+                        value={tempApiKey} 
+                        onChange={(e) => setTempApiKey(e.target.value)} 
+                        placeholder="AIzaSy..." 
+                        className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 transition-colors mb-3" 
+                      />
+                      
+                      <div className="flex gap-2">
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold text-center transition-colors flex items-center justify-center">
+                          Get Free Key
+                        </a>
+                        <button onClick={() => { setApiKey(tempApiKey.trim()); setIsSettingsOpen(false); }} className="flex-1 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-semibold transition-colors">
+                          Save Key
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-zinc-900/50 p-5 rounded-3xl border border-white/5 space-y-4 mt-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-zinc-200 mb-1">Manage Categories</h3>
+                      <p className="text-xs text-zinc-500 leading-relaxed mb-4">
+                        Add your own expense categories, on top of the built-in ones. Custom categories can be removed anytime.
+                      </p>
+
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {Object.values(CATEGORIES).map((cat) => (
+                          <div key={cat.id} className={`flex items-center gap-1.5 pl-2.5 ${cat.custom ? "pr-1.5" : "pr-2.5"} py-1.5 rounded-full border border-white/5 ${cat.bg}`}>
+                            <span className={cat.color}>
+                              {React.createElement(cat.icon, { size: 13 })}
+                            </span>
+                            <span className="text-xs font-medium text-zinc-200">{cat.label}</span>
+                            {cat.custom && (
+                              <button
+                                onClick={() => removeCustomCategory(cat.id)}
+                                className="w-4 h-4 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+                                title={`Remove ${cat.label}`}
+                              >
+                                <Icons.X size={11} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 space-y-3">
+                        <input
+                          type="text"
+                          value={newCatLabel}
+                          onChange={(e) => setNewCatLabel(e.target.value)}
+                          placeholder="New category name (e.g. Snacks)"
+                          className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition-colors"
+                        />
+
+                        <div>
+                          <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Icon</p>
+                          <div className="flex flex-wrap gap-2">
+                            {CATEGORY_ICON_CHOICES.map((opt) => (
+                              <button
+                                key={opt.name}
+                                type="button"
+                                onClick={() => setNewCatIconName(opt.name)}
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-colors ${newCatIconName === opt.name ? "bg-indigo-500/20 border-indigo-500 text-indigo-300" : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}
+                              >
+                                {React.createElement(opt.icon, { size: 16 })}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Color</p>
+                          <div className="flex flex-wrap gap-2">
+                            {CATEGORY_COLOR_CHOICES.map((opt, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setNewCatColorIdx(idx)}
+                                style={{ backgroundColor: opt.hex }}
+                                className={`w-7 h-7 rounded-full transition-transform ${newCatColorIdx === idx ? "ring-2 ring-offset-2 ring-offset-zinc-950 ring-white scale-105" : "opacity-80 hover:opacity-100"}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={handleAddCategorySubmit}
+                          disabled={!newCatLabel.trim()}
+                          className="w-full py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <Icons.Plus size={14} /> Add Category
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       );
     }
 
+    // Initialize the React application
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<ExpenseSplitApp />);
   </script>
