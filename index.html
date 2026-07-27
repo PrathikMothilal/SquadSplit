@@ -16,9 +16,6 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script type="module">
-    import { GoogleGenAI } from "https://esm.run/@google/genai";
-    window.GoogleGenAI = GoogleGenAI;
-
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import {
@@ -35,7 +32,7 @@
 
     // Your real Firebase project config
     window.FIREBASE_CONFIG = {
-      apiKey: "AIzaSyARrPJZy4qIvFfaNv0tOC187uloJ8flSMY", // Cleared API key to prevent sandbox domain auth errors. Add your key and whitelist your domain in Firebase to enable sync.
+      apiKey: "AIzaSyARrPJZy4qIvFfaNv0tOC187uloJ8flSMY",
       authDomain: "squadsplit-456d5.firebaseapp.com",
       projectId: "squadsplit-456d5",
       storageBucket: "squadsplit-456d5.firebasestorage.app",
@@ -122,6 +119,7 @@
       Camera: (p) => <svg xmlns="http://www.w3.org/2000/svg" width={p.size||24} height={p.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>,
       Loader2: (p) => <Icon d={["M21 12a9 9 0 1 1-6.219-8.56"]} {...p} />,
       Folder: (p) => <Icon d={["M4 20h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-8.5L9.5 4H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1Z"]} {...p} />,
+      Settings: (p) => <Icon d={["M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"]} {...p} />,
     };
 
     const AVATAR_COLORS = ["bg-indigo-500", "bg-emerald-500", "bg-rose-500", "bg-amber-500", "bg-cyan-500", "bg-fuchsia-500", "bg-lime-500"];
@@ -261,6 +259,15 @@
     function ExpenseSplitApp() {
       // Setup state for Data Loading
       const [isDBReady, setIsDBReady] = useState(false);
+
+      // API Key State
+      const [apiKey, setApiKey] = useState(() => localStorage.getItem("squadsplit_gemini_key") || "");
+      const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+      const [tempApiKey, setTempApiKey] = useState("");
+
+      useEffect(() => {
+        localStorage.setItem("squadsplit_gemini_key", apiKey);
+      }, [apiKey]);
 
       // Group & Top-Level State
       const [groups, setGroups] = useState([]); 
@@ -664,6 +671,11 @@
         resetExpenseForm();
       }
 
+      function openSettings() {
+        setTempApiKey(apiKey);
+        setIsSettingsOpen(true);
+      }
+
       async function handleReceiptUpload(e) {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -678,63 +690,36 @@
             reader.onloadend = () => {
                 const result = reader.result;
                 if (typeof result === 'string') {
-                resolve(result.split(',')[1]);
-            } else {
-                reject(new Error("Failed to read file"));
-            }
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+                  resolve(result.split(',')[1]); // strip off the data uri prefix
+                } else {
+                  reject(new Error("Failed to read file"));
+                }
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
 
-      const prompt = "Analyze this receipt. Return a JSON object with 'amount' (number, total amount paid), 'description' (string, usually the merchant or store name), and 'category' (string, MUST be exactly one of these: food, travel, stay, groceries, entertainment, other). Be as accurate as possible. Only return the JSON.";
+          const prompt = "Analyze this receipt. Return a JSON object with 'amount' (number, total amount paid), 'description' (string, usually the merchant or store name), and 'category' (string, MUST be exactly one of these: food, travel, stay, groceries, entertainment, other). Be as accurate as possible. Only return the JSON.";
 
-      // NOTE: Newer Gemini API keys (the "AQ." prefix, issued by AI Studio since mid-2026)
-      // are Auth keys, not the old "AIza" Standard keys. The official @google/genai SDK
-      // (loaded above and exposed as window.GoogleGenAI) handles this auth correctly,
-      // so we use it here instead of a raw fetch call.
-      //
-      // The key below is stored obfuscated (base64 + reversed) instead of as plain text.
-      // This is NOT real security -- anyone can still decode it from the page source, it's
-      // just enough to stop GitHub's automated secret scanner from pattern-matching the raw
-      // "AQ." / "AIza" key format and blocking your push or getting the key auto-revoked by
-      // Google's partner integration. The real protection is restricting the key itself:
-      // go to https://console.cloud.google.com/apis/credentials, open your Gemini key, and
-      // under "Application restrictions" set "Websites" to your GitHub Pages URL
-      // (e.g. yourusername.github.io/*). That way even a scraped key is useless elsewhere.
-      //
-      // TO SET YOUR KEY: get one from https://aistudio.google.com/app/apikey, restrict it
-      // as above, then open the browser console on this page and run:
-      //   btoa("PASTE_YOUR_KEY_HERE".split("").reverse().join(""))
-      // Copy the result and paste it as the OBFUSCATED_KEY string below.
-      const OBFUSCATED_KEY = "PASTE_OBFUSCATED_KEY_HERE";
-      const apiKey = OBFUSCATED_KEY === "PASTE_OBFUSCATED_KEY_HERE"
-        ? null
-        : atob(OBFUSCATED_KEY).split("").reverse().join("");
+          // Use the user-provided API key from settings. 
+          // An empty string still allows the collaborative environment to supply it dynamically at runtime if hosted here.
+          const effectiveApiKey = apiKey || ""; 
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${effectiveApiKey}`;
 
-      if (!apiKey) {
-        throw new Error("No Gemini API key configured. See the comment above handleReceiptUpload in index.html.");
-      }
-
-      const ai = new window.GoogleGenAI({ apiKey });
-
-      let result;
-      let delay = 1000;
-      let lastError = null;
-
-      // Retry loop with exponential backoff for rate limits
-      for (let i = 0; i < 3; i++) {
-        try {
-          result = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+          const payload = {
             contents: [{
               role: "user",
               parts: [
                 { text: prompt },
-                { inlineData: { mimeType: file.type || 'image/jpeg', data: base64Data } }
+                {
+                  inlineData: {
+                    mimeType: file.type || 'image/jpeg',
+                    data: base64Data
+                  }
+                }
               ]
             }],
-            config: {
+            generationConfig: {
               responseMimeType: "application/json",
               responseSchema: {
                 type: "OBJECT",
@@ -746,45 +731,70 @@
                 required: ["amount", "description", "category"]
               }
             }
-          });
-          break;
-        } catch (err) {
-          console.error(`API Error (Attempt ${i + 1}):`, err);
-          lastError = err;
-          // Only retry on rate limit errors; fail fast on anything else (bad key, bad model, etc.)
-          const status = err?.status || err?.code;
-          if (status !== 429 || i === 2) throw err;
-          await new Promise(res => setTimeout(res, delay));
-          delay *= 2;
-        }
-      }
+          };
 
-      if (!result) {
-        throw lastError || new Error("Failed to reach the AI service.");
-      }
+          let resultData;
+          let delay = 1000;
+          let lastError = null;
 
-      let jsonText = result?.text ?? result?.candidates?.[0]?.content?.parts?.[0]?.text;
+          // Retry loop with exponential backoff for rate limits
+          for (let i = 0; i < 3; i++) {
+            try {
+              const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
 
-      if (jsonText) {
-        // Strip markdown formatting if the model ignored responseMimeType
-        jsonText = jsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const parsed = JSON.parse(jsonText);
+              if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                const status = response.status;
+                // If the user forgot to supply their own key on github, give a friendly message
+                if (status === 400 && errData?.error?.message?.includes('API key')) {
+                   throw new Error("Missing or invalid Gemini API Key! Please click the Gear icon in the top right to set it.");
+                }
+                throw new Error(errData?.error?.message || `HTTP ${status}`);
+              }
 
-        if (parsed.amount) setAmount(parsed.amount.toString());
-        if (parsed.description) setDesc(parsed.description);
+              resultData = await response.json();
+              break;
+            } catch (err) {
+              console.error(`API Error (Attempt ${i + 1}):`, err);
+              lastError = err;
+              // Fail fast on non-rate-limit errors
+              if (!err.message.includes("429") || i === 2) throw err;
+              await new Promise(res => setTimeout(res, delay));
+              delay *= 2;
+            }
+          }
 
-        // Client-side category validation
-        if (parsed.category && CATEGORIES[parsed.category.toLowerCase()]) {
-            setCategory(parsed.category.toLowerCase());
-        } else {
-            setCategory("other");
-        }
-      } else {
-        throw new Error("Could not extract data from the receipt.");
-      }
+          if (!resultData) {
+            throw lastError || new Error("Failed to reach the AI service.");
+          }
+
+          const candidate = resultData.candidates?.[0];
+          let jsonText = candidate?.content?.parts?.[0]?.text;
+
+          if (jsonText) {
+            // Strip markdown formatting just in case
+            jsonText = jsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(jsonText);
+
+            if (parsed.amount) setAmount(parsed.amount.toString());
+            if (parsed.description) setDesc(parsed.description);
+
+            // Client-side category validation
+            if (parsed.category && CATEGORIES[parsed.category.toLowerCase()]) {
+                setCategory(parsed.category.toLowerCase());
+            } else {
+                setCategory("other");
+            }
+          } else {
+            throw new Error("Could not extract data from the receipt.");
+          }
         } catch (err) {
           console.error("Scanning error:", err);
-          setFormError("Receipt scan failed. Please try again or enter details manually.");
+          setFormError(err.message || "Receipt scan failed. Please try again or enter details manually.");
         } finally {
           setIsScanning(false);
           // Reset file input so the same file can be selected again if needed
@@ -898,17 +908,22 @@
                     </p>
                   </div>
                 </button>
-                <div className="flex -space-x-2">
-                  {members.slice(0, 3).map(m => (
-                    <div key={m.id} className={`w-8 h-8 rounded-full border-2 border-[#0A0A0B] flex items-center justify-center text-[10px] font-bold text-white ${m.color}`}>
-                      {initials(m.name)}
-                    </div>
-                  ))}
-                  {members.length > 3 && (
-                    <div className="w-8 h-8 rounded-full border-2 border-[#0A0A0B] bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-400">
-                      +{members.length - 3}
-                    </div>
-                  )}
+                <div className="flex items-center gap-3">
+                  <div className="flex -space-x-2">
+                    {members.slice(0, 3).map(m => (
+                      <div key={m.id} className={`w-8 h-8 rounded-full border-2 border-[#0A0A0B] flex items-center justify-center text-[10px] font-bold text-white ${m.color}`}>
+                        {initials(m.name)}
+                      </div>
+                    ))}
+                    {members.length > 3 && (
+                      <div className="w-8 h-8 rounded-full border-2 border-[#0A0A0B] bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-400">
+                        +{members.length - 3}
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={openSettings} className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors" title="Settings">
+                    <Icons.Settings size={14} />
+                  </button>
                 </div>
               </div>
               
@@ -1358,7 +1373,6 @@
               )}
             </main>
 
-            {}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[380px] bg-zinc-900/90 backdrop-blur-xl border border-white/10 rounded-3xl px-2 py-2 flex items-center justify-between shadow-2xl z-40">
               <button onClick={() => setActiveTab("dashboard")} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-2xl transition-all ${activeTab === "dashboard" ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"}`}>
                 <Icons.LayoutGrid size={22} className={activeTab === "dashboard" ? "text-indigo-400" : ""} />
@@ -1536,6 +1550,47 @@
                     <button onClick={dialog.onConfirm} className={`flex-1 py-3 rounded-xl font-semibold transition-colors text-sm ${dialog.isDestructive ? 'bg-rose-500 hover:bg-rose-600' : 'bg-indigo-500 hover:bg-indigo-600'} text-white`}>
                       {dialog.confirmText}
                     </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isSettingsOpen && (
+              <div className="absolute inset-0 bg-[#0A0A0B] z-[60] flex flex-col transition-all duration-300">
+                <div className="flex items-center justify-between px-5 pt-12 sm:pt-8 pb-4 bg-zinc-950 border-b border-white/5">
+                  <button onClick={() => setIsSettingsOpen(false)} className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-zinc-400 hover:bg-zinc-900 transition-colors">
+                    <Icons.ChevronLeft size={24} />
+                  </button>
+                  <h2 className="text-lg font-bold text-white">Settings</h2>
+                  <div className="w-10"></div> 
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+                  <div className="bg-zinc-900/50 p-5 rounded-3xl border border-white/5 space-y-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-zinc-200 mb-1">Gemini API Key</h3>
+                      <p className="text-xs text-zinc-500 leading-relaxed mb-4">
+                        To use the AI receipt scanner when hosting this app yourself, you need a free Gemini API key. 
+                        Your key is saved locally in your browser.
+                      </p>
+                      
+                      <input 
+                        type="password" 
+                        value={tempApiKey} 
+                        onChange={(e) => setTempApiKey(e.target.value)} 
+                        placeholder="AIzaSy..." 
+                        className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 transition-colors mb-3" 
+                      />
+                      
+                      <div className="flex gap-2">
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold text-center transition-colors flex items-center justify-center">
+                          Get Free Key
+                        </a>
+                        <button onClick={() => { setApiKey(tempApiKey.trim()); setIsSettingsOpen(false); }} className="flex-1 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-semibold transition-colors">
+                          Save Key
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
