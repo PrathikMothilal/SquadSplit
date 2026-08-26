@@ -16,31 +16,16 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script type="module">
+    // Import correct standard modules for Firebase v11.6.1
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import {
-      initializeFirestore, doc, setDoc, deleteDoc, onSnapshot, collection,
-      persistentLocalCache, persistentSingleTabManager
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // Expose Firebase modules to the global window object so React (Babel) can access them
     window.Firebase = {
-      initializeApp, getAuth, signInAnonymously, signInWithCustomToken,
-      initializeFirestore, doc, setDoc, deleteDoc, onSnapshot, collection,
-      persistentLocalCache, persistentSingleTabManager
+      initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
+      getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection
     };
-
-    // Your real Firebase project config
-    window.FIREBASE_CONFIG = {
-      apiKey: "AIzaSyARrPJZy4qIvFfaNv0tOC187uloJ8flSMY",
-      authDomain: "squadsplit-456d5.firebaseapp.com",
-      projectId: "squadsplit-456d5",
-      storageBucket: "squadsplit-456d5.firebasestorage.app",
-      messagingSenderId: "956229993266",
-      appId: "1:956229993266:web:234f703e2836b9c8aa8d2b",
-      measurementId: "G-ZWHCTQY2P5"
-    };
-    window.FIREBASE_APP_ID = "squadsplit-app";
 
     window.dispatchEvent(new Event('firebase-modules-loaded'));
   </script>
@@ -77,6 +62,15 @@
     }
     input[type=number] {
       -moz-appearance: textfield;
+    }
+    /* Style the datetime-local input icon to fit dark mode */
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      opacity: 0.5;
+      cursor: pointer;
+    }
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+      opacity: 0.8;
     }
   </style>
 </head>
@@ -129,8 +123,7 @@
 
     const AVATAR_COLORS = ["bg-indigo-500", "bg-emerald-500", "bg-rose-500", "bg-amber-500", "bg-cyan-500", "bg-fuchsia-500", "bg-lime-500"];
 
-    // Built-in categories. Any user-added custom categories (see CategoriesManager in Settings)
-    // are merged on top of these at runtime and persisted separately in localStorage.
+    // Built-in categories
     const DEFAULT_CATEGORIES = {
       food: { id: "food", label: "Food", icon: Icons.Utensils, color: "text-amber-400", bg: "bg-amber-400/10", hex: "#fbbf24" },
       drinks: { id: "drinks", label: "Drinks", icon: Icons.GlassWater, color: "text-sky-400", bg: "bg-sky-400/10", hex: "#38bdf8" },
@@ -144,7 +137,6 @@
       other: { id: "other", label: "Other", icon: Icons.MoreHorizontal, color: "text-zinc-400", bg: "bg-zinc-400/10", hex: "#a1a1aa" },
     };
 
-    // Options offered to the user when they create a custom category in Settings.
     const CATEGORY_ICON_CHOICES = [
       { name: "Tag", icon: Icons.Tag },
       { name: "Utensils", icon: Icons.Utensils },
@@ -220,6 +212,13 @@
 
     function formatTime(ts) {
       return new Date(ts).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
+    }
+    
+    function formatForDateInput(ts) {
+      if (!ts) return "";
+      const d = new Date(ts);
+      const pad = (n) => n.toString().padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
     function greedySettle(ids, amts) {
@@ -329,9 +328,6 @@
         localStorage.setItem("squadsplit_custom_categories", JSON.stringify(customCategories));
       }, [customCategories]);
 
-      // Merge defaults with any user-created custom categories. This shadows the
-      // module-level DEFAULT_CATEGORIES for the rest of this component so every
-      // existing "CATEGORIES[...]" lookup below picks up custom categories automatically.
       const CATEGORIES = useMemo(() => {
         const merged = { ...DEFAULT_CATEGORIES };
         Object.values(customCategories).forEach((c) => {
@@ -348,7 +344,6 @@
         if (!trimmed) return;
         const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
         let id = `custom_${slug || "category"}`;
-        // Avoid clobbering an existing category id (default or custom)
         if (CATEGORIES[id]) id = `${id}_${Date.now().toString(36)}`;
         setCustomCategories((prev) => ({
           ...prev,
@@ -364,7 +359,6 @@
         });
       }
 
-      // Form state for the "Add Category" UI in Settings
       const [newCatLabel, setNewCatLabel] = useState("");
       const [newCatIconName, setNewCatIconName] = useState(CATEGORY_ICON_CHOICES[0].name);
       const [newCatColorIdx, setNewCatColorIdx] = useState(0);
@@ -393,10 +387,9 @@
           }
           
           const fb = window.Firebase;
-          const appId = window.FIREBASE_APP_ID || 'squadsplit-default';
-          const config = window.FIREBASE_CONFIG || {};
           
-          if (!config.apiKey) {
+          // Fallback if environment variables are not injected (e.g. running totally locally)
+          if (typeof __firebase_config === 'undefined' || !__firebase_config) {
               console.warn("Firebase not configured. Falling back to local memory mode.");
               setGroups(seedGroups);
               setActiveGroupId(seedGroups[0].id);
@@ -405,46 +398,59 @@
           }
 
           try {
-              const app = fb.initializeApp(config);
+              const firebaseConfig = JSON.parse(__firebase_config);
+              const app = fb.initializeApp(firebaseConfig);
               const auth = fb.getAuth(app);
-              const db = fb.initializeFirestore(app, {
-                localCache: fb.persistentLocalCache({
-                  tabManager: fb.persistentSingleTabManager()
-                })
-              });
+              const db = fb.getFirestore(app);
+              const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
               
-              const cred = await fb.signInAnonymously(auth);
-              const user = cred.user;
+              // Canvas Mandatory Rule 3: Auth Before Queries
+              const initAuth = async () => {
+                  if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                      await fb.signInWithCustomToken(auth, __initial_auth_token);
+                  } else {
+                      await fb.signInAnonymously(auth);
+                  }
+              };
+              await initAuth();
               
-              window.db = db;
-              window.uid = user.uid;
-              window.aid = appId;
-              window.isFirebaseActive = true;
-              
-              const groupsRef = fb.collection(db, 'artifacts', appId, 'users', user.uid, 'groups');
-              
-              fb.onSnapshot(groupsRef, (snapshot) => {
-                 const fetched = [];
-                 snapshot.forEach(doc => fetched.push(doc.data()));
-                 fetched.sort((a, b) => b.createdAt - a.createdAt);
-                 
-                 if (fetched.length === 0) {
-                     seedGroups.forEach(g => {
-                        fb.setDoc(fb.doc(db, 'artifacts', appId, 'users', user.uid, 'groups', g.id), g);
+              fb.onAuthStateChanged(auth, (user) => {
+                 if (user) {
+                     window.db = db;
+                     window.uid = user.uid;
+                     window.aid = appId;
+                     window.isFirebaseActive = true;
+                     
+                     // Rule 1: Strict Paths
+                     const groupsRef = fb.collection(db, 'artifacts', appId, 'users', user.uid, 'groups');
+                     
+                     fb.onSnapshot(groupsRef, (snapshot) => {
+                         const fetched = [];
+                         snapshot.forEach(doc => fetched.push(doc.data()));
+                         fetched.sort((a, b) => b.createdAt - a.createdAt);
+                         
+                         if (fetched.length === 0) {
+                             setGroups(seedGroups);
+                             setActiveGroupId(seedGroups[0].id);
+                             seedGroups.forEach(g => {
+                                fb.setDoc(fb.doc(db, 'artifacts', appId, 'users', user.uid, 'groups', g.id), g).catch(console.error);
+                             });
+                         } else {
+                             setGroups(fetched);
+                             setActiveGroupId(curr => {
+                                 if (!curr || !fetched.some(g => g.id === curr)) return fetched[0].id;
+                                 return curr;
+                             });
+                         }
+                         setIsDBReady(true);
+                     }, (err) => {
+                         console.error("Firestore sync error:", err);
+                         // Fallback data in case of unexpected errors
+                         setGroups(seedGroups);
+                         setActiveGroupId(seedGroups[0].id);
+                         setIsDBReady(true);
                      });
-                 } else {
-                     setGroups(fetched);
-                     setActiveGroupId(curr => {
-                         if (!curr || !fetched.some(g => g.id === curr)) return fetched[0].id;
-                         return curr;
-                     });
-                     setIsDBReady(true);
                  }
-              }, (err) => {
-                 console.error("Firestore sync error:", err);
-                 setGroups(seedGroups);
-                 setActiveGroupId(seedGroups[0].id);
-                 setIsDBReady(true);
               });
               
           } catch(err) {
@@ -458,7 +464,8 @@
         initDB();
       }, []);
 
-      async function updateGroupInDB(groupId, updaterFn) {
+      // Properly separated state update and database side-effect (solves the React StrictMode bugs)
+      const updateGroupInDB = (groupId, updaterFn) => {
         if (!isDBReady) return;
         
         setGroups(prev => {
@@ -468,16 +475,19 @@
           const updatedFields = updaterFn(targetGroup);
           const newGroupData = { ...targetGroup, ...updatedFields };
           
-          if (window.isFirebaseActive) {
-             window.Firebase.setDoc(
-                window.Firebase.doc(window.db, 'artifacts', window.aid, 'users', window.uid, 'groups', groupId),
-                newGroupData
-             ).catch(console.error);
-          }
+          // Delay DB call out of the render cycle
+          setTimeout(() => {
+              if (window.isFirebaseActive) {
+                 window.Firebase.setDoc(
+                    window.Firebase.doc(window.db, 'artifacts', window.aid, 'users', window.uid, 'groups', groupId),
+                    newGroupData
+                 ).catch(console.error);
+              }
+          }, 0);
           
           return prev.map(g => g.id === groupId ? newGroupData : g);
         });
-      }
+      };
 
       // Safe access defaults
       const activeGroup = groups.find((g) => g.id === activeGroupId) || groups[0] || { id: "temp", name: "Loading...", members: [], expenses: [], settlements: [] };
@@ -497,14 +507,15 @@
       const [desc, setDesc] = useState("");
       const [amount, setAmount] = useState("");
       const [category, setCategory] = useState("other");
+      const [expenseDate, setExpenseDate] = useState(Date.now());
       const [paidBy, setPaidBy] = useState("m1");
       const [participants, setParticipants] = useState([]);
       const [splitType, setSplitType] = useState("equal");
       const [customSplits, setCustomSplits] = useState({});
       const [formError, setFormError] = useState("");
       const [isScanning, setIsScanning] = useState(false);
-      const [receiptImage, setReceiptImage] = useState(null); // compressed data URI of the scanned/attached bill
-      const [receiptViewerUrl, setReceiptViewerUrl] = useState(null); // set to open the full-screen receipt viewer
+      const [receiptImage, setReceiptImage] = useState(null);
+      const [receiptViewerUrl, setReceiptViewerUrl] = useState(null);
       
       const [dialog, setDialog] = useState({ isOpen: false, title: "", message: "", onConfirm: null, confirmText: "Confirm", isDestructive: true });
 
@@ -759,6 +770,7 @@
         setDesc(expense.description);
         setAmount(expense.amount.toString());
         setCategory(expense.category);
+        setExpenseDate(expense.date);
         setPaidBy(expense.paidBy);
         setParticipants(expense.participants);
         setSplitType(expense.splitType); 
@@ -774,6 +786,7 @@
         setCustomSplits({}); 
         setSplitType("equal");
         setCategory("other");
+        setExpenseDate(Date.now());
         setParticipants(activeGroup.members.map((m) => m.id));
         setPaidBy(activeGroup.members[0]?.id || "");
         setReceiptImage(null);
@@ -788,10 +801,14 @@
         setTempApiKey(apiKey);
         setIsSettingsOpen(true);
       }
+      
+      const handleDateChange = (e) => {
+          const val = e.target.value;
+          if (val) {
+              setExpenseDate(new Date(val).getTime());
+          }
+      };
 
-      // Shrinks an image file down to a small JPEG data URI so it can be safely
-      // stored alongside the expense (Firestore documents are capped at ~1MB,
-      // and a group document holds every expense in it, so receipts must stay tiny).
       function compressImageForStorage(file, maxDim = 1000, quality = 0.6) {
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -831,13 +848,12 @@
         setIsScanning(true);
 
         try {
-          // Robustly read the file as Base64
           const base64Data = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => {
                 const result = reader.result;
                 if (typeof result === 'string') {
-                  resolve(result.split(',')[1]); // strip off the data uri prefix
+                  resolve(result.split(',')[1]); 
                 } else {
                   reject(new Error("Failed to read file"));
                 }
@@ -846,9 +862,6 @@
             reader.readAsDataURL(file);
           });
 
-          // Save a compressed copy of the bill so it can be viewed later from the ledger.
-          // This happens independently of the AI scan below, so the image is kept
-          // even if scanning fails or no API key is configured.
           try {
             const compressed = await compressImageForStorage(file);
             setReceiptImage(compressed);
@@ -857,12 +870,11 @@
           }
 
           const categoryIdList = Object.keys(CATEGORIES).join(", ");
-          const prompt = `Analyze this receipt. Return a JSON object with 'amount' (number, total amount paid), 'description' (string, usually the merchant or store name), and 'category' (string, MUST be exactly one of these: ${categoryIdList}). Be as accurate as possible. Only return the JSON.`;
+          const prompt = `Analyze this receipt. Return a JSON object with 'amount' (number, total amount paid), 'description' (string, usually the merchant or store name), 'category' (string, MUST be exactly one of these: ${categoryIdList}), and 'receiptDate' (string, ISO 8601 format like "YYYY-MM-DDTHH:mm:00" representing the date and time on the receipt. If no year, assume current year. If no time, assume 12:00:00. If no date at all, omit it). Be as accurate as possible. Only return the JSON.`;
 
-          // Use the user-provided API key from settings. 
-          // An empty string still allows the collaborative environment to supply it dynamically at runtime if hosted here.
           const effectiveApiKey = apiKey || ""; 
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${effectiveApiKey}`;
+          // Canvas mandatory fallback for accurate layout capabilities
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${effectiveApiKey}`;
 
           const payload = {
             contents: [{
@@ -884,7 +896,8 @@
                 properties: {
                   amount: { type: "NUMBER" },
                   description: { type: "STRING" },
-                  category: { type: "STRING" }
+                  category: { type: "STRING" },
+                  receiptDate: { type: "STRING" }
                 },
                 required: ["amount", "description", "category"]
               }
@@ -895,7 +908,6 @@
           let delay = 1000;
           let lastError = null;
 
-          // Retry loop with exponential backoff for rate limits
           for (let i = 0; i < 3; i++) {
             try {
               const response = await fetch(apiUrl, {
@@ -907,7 +919,6 @@
               if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
                 const status = response.status;
-                // If the user forgot to supply their own key on github, give a friendly message
                 if (status === 400 && errData?.error?.message?.includes('API key')) {
                    throw new Error("Missing or invalid Gemini API Key! Please click the Gear icon in the top right to set it.");
                 }
@@ -919,7 +930,6 @@
             } catch (err) {
               console.error(`API Error (Attempt ${i + 1}):`, err);
               lastError = err;
-              // Fail fast on non-rate-limit errors
               if (!err.message.includes("429") || i === 2) throw err;
               await new Promise(res => setTimeout(res, delay));
               delay *= 2;
@@ -934,14 +944,18 @@
           let jsonText = candidate?.content?.parts?.[0]?.text;
 
           if (jsonText) {
-            // Strip markdown formatting just in case
             jsonText = jsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
             const parsed = JSON.parse(jsonText);
 
             if (parsed.amount) setAmount(parsed.amount.toString());
             if (parsed.description) setDesc(parsed.description);
+            if (parsed.receiptDate) {
+                const parsedTs = Date.parse(parsed.receiptDate);
+                if (!isNaN(parsedTs)) {
+                    setExpenseDate(parsedTs);
+                }
+            }
 
-            // Client-side category validation
             if (parsed.category && CATEGORIES[parsed.category.toLowerCase()]) {
                 setCategory(parsed.category.toLowerCase());
             } else {
@@ -955,7 +969,6 @@
           setFormError(err.message || "Receipt scan failed. Please try again or enter details manually.");
         } finally {
           setIsScanning(false);
-          // Reset file input so the same file can be selected again if needed
           if (e.target) e.target.value = '';
         }
       }
@@ -981,12 +994,6 @@
           participants.forEach(p => {
             finalCustomSplits[p] = (finalCustomSplits[p] / 100) * amt;
           });
-        }
-
-        let expenseDate = Date.now();
-        if (editingExpenseId) {
-          const existing = expenses.find(exp => exp.id === editingExpenseId);
-          if (existing) expenseDate = existing.date;
         }
 
         const newExpense = {
@@ -1646,6 +1653,17 @@
                         </div>
                       )}
                     </div>
+                    
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 block">Date & Time</label>
+                      <input 
+                        type="datetime-local" 
+                        value={formatForDateInput(expenseDate)} 
+                        onChange={handleDateChange} 
+                        disabled={isScanning} 
+                        className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 transition-colors" 
+                      />
+                    </div>
 
                     <div>
                       <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 block">Category</label>
@@ -1898,7 +1916,6 @@
       );
     }
 
-    // Initialize the React application
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<ExpenseSplitApp />);
   </script>
