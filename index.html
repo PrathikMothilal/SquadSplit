@@ -380,12 +380,44 @@
       }
 
       // Group & Top-Level State
+      const LOCAL_GROUPS_KEY = "squadsplit_groups";
+      const LOCAL_ACTIVE_GROUP_KEY = "squadsplit_active_group_id";
+
       const [groups, setGroups] = useState([]); 
       const [activeGroupId, setActiveGroupId] = useState(null);
       
       const [expandedGroupId, setExpandedGroupId] = useState(null);
       const [newGroupName, setNewGroupName] = useState("");
       const [memberInputByGroup, setMemberInputByGroup] = useState({});
+
+      // Local-mode persistence helpers (used when Firebase isn't configured)
+      function loadLocalGroups() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(LOCAL_GROUPS_KEY));
+          if (saved && Array.isArray(saved) && saved.length > 0) {
+            const savedActiveId = localStorage.getItem(LOCAL_ACTIVE_GROUP_KEY);
+            setGroups(saved);
+            setActiveGroupId(saved.some((g) => g.id === savedActiveId) ? savedActiveId : saved[0].id);
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to load local groups:", e);
+        }
+        setGroups(seedGroups);
+        setActiveGroupId(seedGroups[0].id);
+      }
+
+      // Persist groups/activeGroupId to localStorage whenever they change in local mode
+      useEffect(() => {
+        if (user && window.fbDb) return; // Firebase is the source of truth in that mode
+        if (!groups || groups.length === 0) return;
+        try {
+          localStorage.setItem(LOCAL_GROUPS_KEY, JSON.stringify(groups));
+          if (activeGroupId) localStorage.setItem(LOCAL_ACTIVE_GROUP_KEY, activeGroupId);
+        } catch (e) {
+          console.error("Failed to save local groups:", e);
+        }
+      }, [groups, activeGroupId, user]);
 
       // 1. Authenticate Firebase (Once on Mount)
       useEffect(() => {
@@ -397,8 +429,7 @@
             }
             if (!window.fbAuth) {
                 console.warn("No Firebase config found. Running locally.");
-                setGroups(seedGroups);
-                setActiveGroupId(seedGroups[0].id);
+                loadLocalGroups();
                 setIsDBReady(true);
                 return;
             }
@@ -415,8 +446,7 @@
                 });
             } catch (err) {
                 console.error("Auth error:", err);
-                setGroups(seedGroups);
-                setActiveGroupId(seedGroups[0].id);
+                loadLocalGroups();
                 setIsDBReady(true);
             }
         };
@@ -456,8 +486,7 @@
             setIsDBReady(true);
         }, (err) => {
             console.error("Firestore sync error:", err);
-            setGroups(seedGroups);
-            setActiveGroupId(seedGroups[0].id);
+            loadLocalGroups();
             setIsDBReady(true);
         });
 
