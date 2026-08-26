@@ -391,13 +391,23 @@
       const [memberInputByGroup, setMemberInputByGroup] = useState({});
 
       // Local-mode persistence helpers (used when Firebase isn't configured)
+      function persistGroupsLocally(newGroups, newActiveId) {
+        try {
+          localStorage.setItem(LOCAL_GROUPS_KEY, JSON.stringify(newGroups));
+          if (newActiveId) localStorage.setItem(LOCAL_ACTIVE_GROUP_KEY, newActiveId);
+        } catch (e) {
+          console.error("Failed to save locally:", e);
+        }
+      }
+
       function loadLocalGroups() {
         try {
           const saved = JSON.parse(localStorage.getItem(LOCAL_GROUPS_KEY));
           if (saved && Array.isArray(saved) && saved.length > 0) {
             const savedActiveId = localStorage.getItem(LOCAL_ACTIVE_GROUP_KEY);
+            const resolvedActiveId = saved.some((g) => g.id === savedActiveId) ? savedActiveId : saved[0].id;
             setGroups(saved);
-            setActiveGroupId(saved.some((g) => g.id === savedActiveId) ? savedActiveId : saved[0].id);
+            setActiveGroupId(resolvedActiveId);
             return;
           }
         } catch (e) {
@@ -405,27 +415,32 @@
         }
         setGroups(seedGroups);
         setActiveGroupId(seedGroups[0].id);
+        persistGroupsLocally(seedGroups, seedGroups[0].id);
       }
 
-      // Persist groups/activeGroupId to localStorage whenever they change in local mode
+      // Safety-net: also mirror to localStorage on any groups change, in case a
+      // direct setGroups call somewhere doesn't go through persistGroupsLocally.
       useEffect(() => {
-        if (user && window.fbDb) return; // Firebase is the source of truth in that mode
         if (!groups || groups.length === 0) return;
-        try {
-          localStorage.setItem(LOCAL_GROUPS_KEY, JSON.stringify(groups));
-          if (activeGroupId) localStorage.setItem(LOCAL_ACTIVE_GROUP_KEY, activeGroupId);
-        } catch (e) {
-          console.error("Failed to save local groups:", e);
-        }
-      }, [groups, activeGroupId, user]);
+        persistGroupsLocally(groups, activeGroupId);
+      }, [groups, activeGroupId]);
 
       // 1. Authenticate Firebase (Once on Mount)
       useEffect(() => {
         let unsubscribe = () => {};
         const init = async () => {
-            // Wait for module script to load
-            while (!window.Firebase) {
+            // Wait for module script to load (with a timeout so a blocked/slow
+            // CDN import can't hang the app on the loading screen forever)
+            let waited = 0;
+            while (!window.Firebase && waited < 3000) {
                 await new Promise(r => setTimeout(r, 50));
+                waited += 50;
+            }
+            if (!window.Firebase) {
+                console.warn("Firebase module failed to load. Running locally.");
+                loadLocalGroups();
+                setIsDBReady(true);
+                return;
             }
             if (!window.fbAuth) {
                 console.warn("No Firebase config found. Running locally.");
@@ -494,22 +509,26 @@
       }, [user]);
 
       // 3. Centralized robust update mechanism (Single Source of Truth)
-      // This pushes to Firebase, and Firestore's locally-optimistic onSnapshot does the rest!
+      // Always saves locally first and immediately, then also pushes to
+      // Firebase (if configured) as a best-effort background sync.
       function updateGroupInDB(groupId, updaterFn) {
         const targetGroup = groups.find((g) => g.id === groupId);
         if (!targetGroup) return;
-        
+
         const updatedFields = updaterFn(targetGroup);
         const newGroupData = { ...targetGroup, ...updatedFields };
-        
+        const newGroups = groups.map((g) => (g.id === groupId ? newGroupData : g));
+
+        // Save locally, right now, no matter what.
+        setGroups(newGroups);
+        persistGroupsLocally(newGroups, activeGroupId);
+
+        // Then mirror to the database, if one is configured.
         if (user && window.fbDb) {
            window.Firebase.setDoc(
               window.Firebase.doc(window.fbDb, 'artifacts', window.fbAppId, 'users', user.uid, 'groups', groupId),
               newGroupData
            ).catch(console.error);
-        } else {
-           // Fallback for local testing if DB is missing
-           setGroups((prev) => prev.map((g) => g.id === groupId ? newGroupData : g));
         }
       }
 
@@ -665,14 +684,18 @@
         if (!name) return;
         const id = "g" + Date.now();
         const newGroup = { id, name, members: [], expenses: [], settlements: [], createdAt: Date.now() };
-        
+        const newGroups = [newGroup, ...groups];
+
+        // Save locally, right now, no matter what.
+        setGroups(newGroups);
+        persistGroupsLocally(newGroups, id);
+
+        // Then mirror to the database, if one is configured.
         if (user && window.fbDb) {
            window.Firebase.setDoc(
               window.Firebase.doc(window.fbDb, 'artifacts', window.fbAppId, 'users', user.uid, 'groups', id),
               newGroup
            ).catch(console.error);
-        } else {
-           setGroups((prev) => [newGroup, ...prev]);
         }
         
         setActiveGroupId(id);
@@ -698,18 +721,20 @@
             if (remaining.length === 0) {
               const newId = "g" + Date.now();
               const newGroup = { id: newId, name: "New Trip", members: [], expenses: [], settlements: [], createdAt: Date.now() };
-              
+
+              setGroups([newGroup]);
+              persistGroupsLocally([newGroup], newId);
+
               if (user && window.fbDb) {
                  window.Firebase.setDoc(window.Firebase.doc(window.fbDb, 'artifacts', window.fbAppId, 'users', user.uid, 'groups', newId), newGroup).catch(console.error);
-              } else {
-                 setGroups([newGroup]);
               }
               setActiveGroupId(newId);
               setExpandedGroupId(newId);
             } else {
-              if (!user || !window.fbDb) {
-                 setGroups(remaining);
-              }
+              const newActiveId = activeGroupId === id ? remaining[0].id : activeGroupId;
+              setGroups(remaining);
+              persistGroupsLocally(remaining, newActiveId);
+
               if (activeGroupId === id) setActiveGroupId(remaining[0].id);
               if (expandedGroupId === id) setExpandedGroupId(null);
             }
