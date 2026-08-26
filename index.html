@@ -923,8 +923,10 @@
           const prompt = `Analyze this receipt. Return a JSON object with 'amount' (number, total amount paid), 'description' (string, usually the merchant or store name), 'category' (string, MUST be exactly one of these: ${categoryIdList}), and 'receiptDate' (string, ISO 8601 format like "YYYY-MM-DDTHH:mm:00" representing the date and time on the receipt. If no year, assume current year. If no time, assume 12:00:00. If no date at all, omit it). Be as accurate as possible. Only return the JSON.`;
 
           const effectiveApiKey = apiKey || ""; 
-          // Canvas mandatory fallback for accurate layout capabilities
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${effectiveApiKey}`;
+          // gemini-2.5-flash-lite: current stable, low-latency model (the old
+          // dated preview snapshot this used to call, gemini-2.5-flash-preview-09-2025,
+          // was shut down by Google in Feb 2026 and returns 404 for every request)
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${effectiveApiKey}`;
 
           const payload = {
             contents: [{
