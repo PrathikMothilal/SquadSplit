@@ -16,18 +16,27 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script type="module">
-    // Import correct standard modules for Firebase v11.6.1
+    // 1. Initialize Firebase completely outside the component to prevent race conditions
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Expose Firebase modules to the global window object so React (Babel) can access them
     window.Firebase = {
       initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
       getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection
     };
 
-    window.dispatchEvent(new Event('firebase-modules-loaded'));
+    try {
+      if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+        const config = JSON.parse(__firebase_config);
+        window.fbApp = initializeApp(config);
+        window.fbAuth = getAuth(window.fbApp);
+        window.fbDb = getFirestore(window.fbApp);
+        window.fbAppId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+      }
+    } catch (e) {
+      console.error("Failed to initialize Firebase in module:", e);
+    }
   </script>
 
   <style>
@@ -304,6 +313,7 @@
 
     function ExpenseSplitApp() {
       // Setup state for Data Loading
+      const [user, setUser] = useState(null);
       const [isDBReady, setIsDBReady] = useState(false);
 
       // API Key State
@@ -315,13 +325,10 @@
         localStorage.setItem("squadsplit_gemini_key", apiKey);
       }, [apiKey]);
 
-      // Custom Categories State (persisted locally; stored as { [id]: { id, label, iconName, color, bg, hex, custom:true } })
+      // Custom Categories State (persisted locally)
       const [customCategories, setCustomCategories] = useState(() => {
-        try {
-          return JSON.parse(localStorage.getItem("squadsplit_custom_categories")) || {};
-        } catch {
-          return {};
-        }
+        try { return JSON.parse(localStorage.getItem("squadsplit_custom_categories")) || {}; }
+        catch { return {}; }
       });
 
       useEffect(() => {
@@ -380,114 +387,102 @@
       const [newGroupName, setNewGroupName] = useState("");
       const [memberInputByGroup, setMemberInputByGroup] = useState({});
 
+      // 1. Authenticate Firebase (Once on Mount)
       useEffect(() => {
-        const initDB = async () => {
-          while (!window.Firebase) {
-            await new Promise(r => setTimeout(r, 50));
-          }
-          
-          const fb = window.Firebase;
-          
-          // Fallback if environment variables are not injected (e.g. running totally locally)
-          if (typeof __firebase_config === 'undefined' || !__firebase_config) {
-              console.warn("Firebase not configured. Falling back to local memory mode.");
-              setGroups(seedGroups);
-              setActiveGroupId(seedGroups[0].id);
-              setIsDBReady(true);
-              return;
-          }
-
-          try {
-              const firebaseConfig = JSON.parse(__firebase_config);
-              const app = fb.initializeApp(firebaseConfig);
-              const auth = fb.getAuth(app);
-              const db = fb.getFirestore(app);
-              const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-              
-              // Canvas Mandatory Rule 3: Auth Before Queries
-              const initAuth = async () => {
-                  if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                      await fb.signInWithCustomToken(auth, __initial_auth_token);
-                  } else {
-                      await fb.signInAnonymously(auth);
-                  }
-              };
-              await initAuth();
-              
-              fb.onAuthStateChanged(auth, (user) => {
-                 if (user) {
-                     window.db = db;
-                     window.uid = user.uid;
-                     window.aid = appId;
-                     window.isFirebaseActive = true;
-                     
-                     // Rule 1: Strict Paths
-                     const groupsRef = fb.collection(db, 'artifacts', appId, 'users', user.uid, 'groups');
-                     
-                     fb.onSnapshot(groupsRef, (snapshot) => {
-                         const fetched = [];
-                         snapshot.forEach(doc => fetched.push(doc.data()));
-                         fetched.sort((a, b) => b.createdAt - a.createdAt);
-                         
-                         if (fetched.length === 0) {
-                             setGroups(seedGroups);
-                             setActiveGroupId(seedGroups[0].id);
-                             seedGroups.forEach(g => {
-                                fb.setDoc(fb.doc(db, 'artifacts', appId, 'users', user.uid, 'groups', g.id), g).catch(console.error);
-                             });
-                         } else {
-                             setGroups(fetched);
-                             setActiveGroupId(curr => {
-                                 if (!curr || !fetched.some(g => g.id === curr)) return fetched[0].id;
-                                 return curr;
-                             });
-                         }
-                         setIsDBReady(true);
-                     }, (err) => {
-                         console.error("Firestore sync error:", err);
-                         // Fallback data in case of unexpected errors
-                         setGroups(seedGroups);
-                         setActiveGroupId(seedGroups[0].id);
-                         setIsDBReady(true);
-                     });
-                 }
-              });
-              
-          } catch(err) {
-              console.error("Firebase initialization failed:", err);
-              setGroups(seedGroups);
-              setActiveGroupId(seedGroups[0].id);
-              setIsDBReady(true);
-          }
+        let unsubscribe = () => {};
+        const init = async () => {
+            // Wait for module script to load
+            while (!window.Firebase) {
+                await new Promise(r => setTimeout(r, 50));
+            }
+            if (!window.fbAuth) {
+                console.warn("No Firebase config found. Running locally.");
+                setGroups(seedGroups);
+                setActiveGroupId(seedGroups[0].id);
+                setIsDBReady(true);
+                return;
+            }
+            
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await window.Firebase.signInWithCustomToken(window.fbAuth, __initial_auth_token);
+                } else {
+                    await window.Firebase.signInAnonymously(window.fbAuth);
+                }
+                
+                unsubscribe = window.Firebase.onAuthStateChanged(window.fbAuth, (u) => {
+                    setUser(u);
+                });
+            } catch (err) {
+                console.error("Auth error:", err);
+                setGroups(seedGroups);
+                setActiveGroupId(seedGroups[0].id);
+                setIsDBReady(true);
+            }
         };
-        
-        initDB();
+        init();
+        return () => unsubscribe();
       }, []);
 
-      // Properly separated state update and database side-effect (solves the React StrictMode bugs)
-      const updateGroupInDB = (groupId, updaterFn) => {
-        if (!isDBReady) return;
+      // 2. Sync Data from Firebase (Depends on User)
+      useEffect(() => {
+        if (!user || !window.fbDb) return;
         
-        setGroups(prev => {
-          const targetGroup = prev.find(g => g.id === groupId);
-          if (!targetGroup) return prev;
-          
-          const updatedFields = updaterFn(targetGroup);
-          const newGroupData = { ...targetGroup, ...updatedFields };
-          
-          // Delay DB call out of the render cycle
-          setTimeout(() => {
-              if (window.isFirebaseActive) {
-                 window.Firebase.setDoc(
-                    window.Firebase.doc(window.db, 'artifacts', window.aid, 'users', window.uid, 'groups', groupId),
-                    newGroupData
-                 ).catch(console.error);
-              }
-          }, 0);
-          
-          return prev.map(g => g.id === groupId ? newGroupData : g);
+        const groupsRef = window.Firebase.collection(window.fbDb, 'artifacts', window.fbAppId, 'users', user.uid, 'groups');
+        
+        const unsub = window.Firebase.onSnapshot(groupsRef, (snapshot) => {
+            const fetched = [];
+            snapshot.forEach(doc => fetched.push(doc.data()));
+            fetched.sort((a, b) => b.createdAt - a.createdAt);
+            
+            if (fetched.length === 0) {
+                // Initial Load for a new user - Use Seed Data
+                setGroups(seedGroups);
+                setActiveGroupId(seedGroups[0].id);
+                // Push seeds to database behind the scenes
+                seedGroups.forEach(g => {
+                   window.Firebase.setDoc(
+                     window.Firebase.doc(window.fbDb, 'artifacts', window.fbAppId, 'users', user.uid, 'groups', g.id), 
+                     g
+                   ).catch(console.error);
+                });
+            } else {
+                setGroups(fetched);
+                setActiveGroupId(curr => {
+                    if (!curr || !fetched.some(g => g.id === curr)) return fetched[0].id;
+                    return curr;
+                });
+            }
+            setIsDBReady(true);
+        }, (err) => {
+            console.error("Firestore sync error:", err);
+            setGroups(seedGroups);
+            setActiveGroupId(seedGroups[0].id);
+            setIsDBReady(true);
         });
-      };
+
+        return () => unsub();
+      }, [user]);
+
+      // 3. Centralized robust update mechanism (Single Source of Truth)
+      // This pushes to Firebase, and Firestore's locally-optimistic onSnapshot does the rest!
+      function updateGroupInDB(groupId, updaterFn) {
+        const targetGroup = groups.find((g) => g.id === groupId);
+        if (!targetGroup) return;
+        
+        const updatedFields = updaterFn(targetGroup);
+        const newGroupData = { ...targetGroup, ...updatedFields };
+        
+        if (user && window.fbDb) {
+           window.Firebase.setDoc(
+              window.Firebase.doc(window.fbDb, 'artifacts', window.fbAppId, 'users', user.uid, 'groups', groupId),
+              newGroupData
+           ).catch(console.error);
+        } else {
+           // Fallback for local testing if DB is missing
+           setGroups((prev) => prev.map((g) => g.id === groupId ? newGroupData : g));
+        }
+      }
 
       // Safe access defaults
       const activeGroup = groups.find((g) => g.id === activeGroupId) || groups[0] || { id: "temp", name: "Loading...", members: [], expenses: [], settlements: [] };
@@ -642,17 +637,18 @@
         const id = "g" + Date.now();
         const newGroup = { id, name, members: [], expenses: [], settlements: [], createdAt: Date.now() };
         
-        setGroups((prev) => [newGroup, ...prev]);
+        if (user && window.fbDb) {
+           window.Firebase.setDoc(
+              window.Firebase.doc(window.fbDb, 'artifacts', window.fbAppId, 'users', user.uid, 'groups', id),
+              newGroup
+           ).catch(console.error);
+        } else {
+           setGroups((prev) => [newGroup, ...prev]);
+        }
+        
         setActiveGroupId(id);
         setNewGroupName("");
         setExpandedGroupId(id);
-        
-        if (window.isFirebaseActive) {
-           window.Firebase.setDoc(
-              window.Firebase.doc(window.db, 'artifacts', window.aid, 'users', window.uid, 'groups', id),
-              newGroup
-           ).catch(console.error);
-        }
       }
 
       function requestDeleteGroup(id) {
@@ -673,26 +669,26 @@
             if (remaining.length === 0) {
               const newId = "g" + Date.now();
               const newGroup = { id: newId, name: "New Trip", members: [], expenses: [], settlements: [], createdAt: Date.now() };
-              setGroups([newGroup]);
+              
+              if (user && window.fbDb) {
+                 window.Firebase.setDoc(window.Firebase.doc(window.fbDb, 'artifacts', window.fbAppId, 'users', user.uid, 'groups', newId), newGroup).catch(console.error);
+              } else {
+                 setGroups([newGroup]);
+              }
               setActiveGroupId(newId);
               setExpandedGroupId(newId);
-              
-              if (window.isFirebaseActive) {
-                 window.Firebase.setDoc(
-                    window.Firebase.doc(window.db, 'artifacts', window.aid, 'users', window.uid, 'groups', newId),
-                    newGroup
-                 ).catch(console.error);
-              }
             } else {
-              setGroups(remaining);
+              if (!user || !window.fbDb) {
+                 setGroups(remaining);
+              }
               if (activeGroupId === id) setActiveGroupId(remaining[0].id);
               if (expandedGroupId === id) setExpandedGroupId(null);
             }
             setDialog({ isOpen: false });
             
-            if (window.isFirebaseActive) {
+            if (user && window.fbDb) {
                window.Firebase.deleteDoc(
-                  window.Firebase.doc(window.db, 'artifacts', window.aid, 'users', window.uid, 'groups', id)
+                  window.Firebase.doc(window.fbDb, 'artifacts', window.fbAppId, 'users', user.uid, 'groups', id)
                ).catch(console.error);
             }
           }
